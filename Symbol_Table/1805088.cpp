@@ -109,7 +109,6 @@ public:
                 }
             }
         }
-        cout << "Not found" << endl;
         return nullptr;
     }
 
@@ -133,7 +132,42 @@ public:
             symbol->setPrevious(si);
             si->setNext(symbol);
         }
+        cout << "Not found" << endl;
         return true;
+    }
+
+    bool deleteSymbol(string name){
+        SymbolInfo* si = lookUpScope(name);
+        if(si!=nullptr){
+            SymbolInfo* prev = si->getPrevious();
+            SymbolInfo* next = si->getNext();
+            if(next==nullptr){
+                prev->setNext(nullptr);
+            }
+            else{
+                prev->setNext(next);
+                next->setPrevious(prev);
+            }
+            cout << "Deleted Entry from current ScopeTable" << endl;
+            return true;
+        }
+        return false;
+    }
+
+    void printScope(){
+        cout << "ScopeTable # 1.1.1ScopeTable # 1.1.1" << endl;
+        for(int i=0;i<noOfBuckets;i++){
+            SymbolInfo* si = scopeTable[i];
+            cout << i << " --> ";
+            if(si==nullptr){
+                continue;
+            }
+            while(si!=nullptr){
+                cout << "< " << si->getName() << " : " << si->getType() << " >" << " ";
+                si = si->getNext();
+            }
+            cout << endl;
+        }
     }
 };
 
@@ -159,5 +193,28 @@ public:
 
 int main()
 {
+    ScopeTable* scope = new ScopeTable(7);
+    scope->insertSymbol("A","a",0);
+    scope->insertSymbol("B","b",0);
+    scope->insertSymbol("C","c",1);
+    scope->insertSymbol("D","d",2);
+    scope->insertSymbol("E","e",2);
+    scope->insertSymbol("F","f",2);
+    scope->insertSymbol("G","g",0);
+    scope->insertSymbol("H","h",0);
+    scope->insertSymbol("I","i",1);
+    scope->insertSymbol("J","j",2);
+    scope->insertSymbol("K","k",3);
+    scope->print();
+    scope->lookUpScope("B");
+    scope->lookUpScope("O");
+    scope->lookUpScope("J");
+    scope->lookUpScope("k");
+    scope->deleteSymbol("E");
+    scope->deleteSymbol("G");
+    scope->print();
+    scope->insertSymbol("D","d",0);
+    scope->insertSymbol("E","e",4);
+    scope->print();
     return 0;
 }
