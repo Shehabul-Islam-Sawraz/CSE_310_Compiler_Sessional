@@ -93,6 +93,48 @@ public:
     void setScopeName(){
         this->scopeName = scopeName;
     }
+
+    SymbolInfo* lookUpScope(string name){
+        for(int i=0;i<noOfBuckets;i++){
+            SymbolInfo* si = scopeTable[i];
+            if(si!=nullptr){
+                int x=0;
+                while(si!=nullptr){
+                    if(si->getName().compare(name)==0){
+                        cout << "Found in ScopeTable# 1.1.1 at position " << i << ", " << x << endl;
+                        return si;
+                    }
+                    si = si->getNext();
+                    x++;
+                }
+            }
+        }
+        cout << "Not found" << endl;
+        return nullptr;
+    }
+
+    bool insertSymbol(string name,string type,int index){
+        if(lookUpScope(name)!=nullptr){
+            cout << "<" << name << ", " << type << "> already exists in current ScopeTable" << endl;
+            return false;
+        }
+        SymbolInfo* symbol = new SymbolInfo(name,type);
+        if(scopeTable[index]==nullptr){
+            symbol->setNext(nullptr);
+            symbol->setPrevious(nullptr);
+            scopeTable[index] = symbol;
+        }
+        else{
+            SymbolInfo* si = scopeTable[index];
+            while(si->getNext()!=nullptr){
+                si = si->getNext();
+            }
+            symbol->setNext(nullptr);
+            symbol->setPrevious(si);
+            si->setNext(symbol);
+        }
+        return true;
+    }
 };
 
 class SymbolTable
