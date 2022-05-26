@@ -82,15 +82,15 @@ public:
         return this->noOfChild;
     }
 
-    void setChildNo(){
-        this->noOfChild++;
+    void setChildNo(int noOfChild){
+        this->noOfChild = noOfChild;
     }
 
     string getScopeName(){
         return this->scopeName;
     }
 
-    void setScopeName(){
+    void setScopeName(string scopeName){
         this->scopeName = scopeName;
     }
 
@@ -101,7 +101,7 @@ public:
                 int x=0;
                 while(si!=nullptr){
                     if(si->getName().compare(name)==0){
-                        cout << "Found in ScopeTable# 1.1.1 at position " << i << ", " << x << endl;
+                        cout << "Found in ScopeTable #" << this->scopeName << " at position " << i << ", " << x << endl;
                         return si;
                     }
                     si = si->getNext();
@@ -155,11 +155,12 @@ public:
     }
 
     void printScope(){
-        cout << "ScopeTable # 1.1.1ScopeTable # 1.1.1" << endl;
+        cout << "ScopeTable #" << this->scopeName << endl;
         for(int i=0;i<noOfBuckets;i++){
             SymbolInfo* si = scopeTable[i];
             cout << i << " --> ";
             if(si==nullptr){
+                cout << endl;
                 continue;
             }
             while(si!=nullptr){
@@ -174,26 +175,59 @@ public:
 class SymbolTable
 {
 private:
-    stack<ScopeTable> scopes;
-    ScopeTable currentScope;
+    stack<ScopeTable*> scopes;
+    ScopeTable* currentScope;
+    int noOfChild;
 public:
-    ScopeTable getCurrentScope(){
+    SymbolTable(){
+        this->currentScope = nullptr;
+        this->noOfChild = 0;
+    }
+    ScopeTable* getCurrentScope(){
         return this->currentScope;
     }
 
-    void setCurrentScope(){
-        this->currentScope = currentScope;
-    }
-
-    stack<ScopeTable> getScopeTables(){
+    stack<ScopeTable*> getScopeTables(){
         return this->scopes;
     }
 
+    ScopeTable* createScopeTable(int noOfBuckets){
+        ScopeTable* scope = new ScopeTable(noOfBuckets);
+        if(currentScope==nullptr){
+            this->currentScope = scope;
+            scope->setParentScope(nullptr);
+            scope->setScopeName(to_string(this->noOfChild + 1));
+            this->noOfChild=this->noOfChild+1;
+        }
+        else{
+            scope->setParentScope(this->currentScope);
+            scope->setScopeName((this->currentScope->getScopeName()).append(to_string(this->currentScope->getChildNo() + 1)));
+            this->currentScope->setChildNo(this->currentScope->getChildNo() + 1);
+            this->currentScope = scope;
+        }
+        cout << "New ScopeTable with id " << this->currentScope->getScopeName() << " created" << endl;
+        this->scopes.push(scope);
+        return scope;
+    }
+
+    void exitScope(){
+        if(this->currentScope==nullptr){
+            cout << "No Current Scope" << endl;
+            return;
+        }
+        cout << "ScopeTable with id " << this->currentScope->getScopeName() << " removed" << endl;
+        if(this->currentScope->getParentScope()==nullptr){
+            cout << "Destroying the First Scope" << endl;
+        }
+        this->currentScope = this->currentScope->getParentScope();
+        this->scopes.pop();
+    }
 };
 
 int main()
 {
-    ScopeTable* scope = new ScopeTable(7);
+    SymbolTable* symbolTable = new SymbolTable();
+    ScopeTable * scope =  symbolTable->createScopeTable(7);
     scope->insertSymbol("A","a",0);
     scope->insertSymbol("B","b",0);
     scope->insertSymbol("C","c",1);
@@ -205,16 +239,18 @@ int main()
     scope->insertSymbol("I","i",1);
     scope->insertSymbol("J","j",2);
     scope->insertSymbol("K","k",3);
-    scope->print();
+    scope->printScope();
     scope->lookUpScope("B");
     scope->lookUpScope("O");
     scope->lookUpScope("J");
     scope->lookUpScope("k");
     scope->deleteSymbol("E");
     scope->deleteSymbol("G");
-    scope->print();
+    scope->printScope();
     scope->insertSymbol("D","d",0);
     scope->insertSymbol("E","e",4);
-    scope->print();
+    scope->printScope();
+    symbolTable->exitScope();
+    symbolTable->exitScope();
     return 0;
 }
