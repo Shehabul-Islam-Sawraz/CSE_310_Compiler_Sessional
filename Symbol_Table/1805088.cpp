@@ -222,11 +222,38 @@ public:
         this->currentScope = this->currentScope->getParentScope();
         this->scopes.pop();
     }
+
+    SymbolInfo* lookUp(string name){
+        SymbolInfo* si = nullptr;
+        ScopeTable* scope = this->currentScope;
+        while(scope!=nullptr){
+            si = scope->lookUpScope(name);
+            if(si!=nullptr){
+                return si;
+            }
+            else{
+                scope = scope->getParentScope();
+            }
+        }
+        return nullptr;
+    }
+
+    void printCurrentScope(){
+        this->currentScope->printScope();
+    }
+
+    void printAllScope(){
+        ScopeTable* scope = this->currentScope;
+        while(scope!=nullptr){
+            scope->printScope();
+            scope = scope->getParentScope();
+        }
+    }
 };
 
 int main()
 {
-    SymbolTable* symbolTable = new SymbolTable();
+    /*SymbolTable* symbolTable = new SymbolTable();
     ScopeTable * scope =  symbolTable->createScopeTable(7);
     scope->insertSymbol("A","a",0);
     scope->insertSymbol("B","b",0);
@@ -251,6 +278,6 @@ int main()
     scope->insertSymbol("E","e",4);
     scope->printScope();
     symbolTable->exitScope();
-    symbolTable->exitScope();
+    symbolTable->exitScope();*/
     return 0;
 }
