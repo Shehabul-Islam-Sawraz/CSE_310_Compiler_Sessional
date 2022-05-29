@@ -11,11 +11,13 @@ vector<string> split(string str, char del){
             temp += str[i];
         }
         else{
+            if(temp.compare("")==0){
+                continue;
+            }
             words.push_back(temp);
             temp = "";
         }
     }
-    words.push_back(temp);
     return words;
 }
 
@@ -26,8 +28,8 @@ int stringToInt(string s){
     return x;
 }
 
-unsigned long hashValue(string &str){
-    unsigned long hash = 0;
+uint32_t hashValue(string &str){
+    uint32_t hash = 0;
     for(int c:str)
         hash = c + (hash * 64) + (hash *65536) - hash;
     return hash;
@@ -78,6 +80,10 @@ public:
 
     SymbolInfo* getNext(){
         return this->next;
+    }
+
+    ~SymbolInfo(){
+
     }
 };
 
@@ -187,6 +193,7 @@ public:
                 next->setPrevious(prev);
             }
             cout << "Deleted Entry from current ScopeTable" << endl;
+            delete si;
             return true;
         }
         else{
@@ -198,8 +205,9 @@ public:
     void printScope(){
         cout << "ScopeTable #" << this->scopeName << endl;
         cout << endl;
+        SymbolInfo* si = nullptr;
         for(int i=0;i<noOfBuckets;i++){
-            SymbolInfo* si = scopeTable[i];
+            si = scopeTable[i];
             cout << i << " --> ";
             if(si==nullptr){
                 cout << endl;
@@ -212,12 +220,26 @@ public:
             cout << endl;
         }
     }
+
+    ~ScopeTable()
+    {
+        SymbolInfo* temp = nullptr;
+        for(int i=0;i<noOfBuckets;i++){
+            SymbolInfo* si = scopeTable[i];
+            while(si!=nullptr){
+                temp = si->getNext();
+                delete si;
+                si = temp;
+            }
+        }
+        delete[] scopeTable;
+        cout << "Destroying the scope table" << endl;
+    }
 };
 
 class SymbolTable
 {
 private:
-    stack<ScopeTable*> scopes;
     ScopeTable* currentScope;
     int noOfChild;
 public:
@@ -227,10 +249,6 @@ public:
     }
     ScopeTable* getCurrentScope(){
         return this->currentScope;
-    }
-
-    stack<ScopeTable*> getScopeTables(){
-        return this->scopes;
     }
 
     ScopeTable* createScopeTable(int noOfBuckets){
@@ -249,7 +267,6 @@ public:
             this->currentScope = scope;
         }
         cout << "New ScopeTable with id " << this->currentScope->getScopeName() << " created" << endl;
-        this->scopes.push(scope);
         return scope;
     }
 
@@ -262,8 +279,9 @@ public:
         if(this->currentScope->getParentScope()==nullptr){
             cout << "Destroying the First Scope" << endl;
         }
-        this->currentScope = this->currentScope->getParentScope();
-        this->scopes.pop();
+        ScopeTable* temp = this->currentScope->getParentScope();
+        delete this->currentScope;
+        this->currentScope = temp;
         return this->currentScope;
     }
 
@@ -283,7 +301,9 @@ public:
     }
 
     void printCurrentScope(){
-        this->currentScope->printScope();
+        if(this->currentScope!=nullptr){
+            this->currentScope->printScope();
+        }
     }
 
     void printAllScope(){
@@ -294,39 +314,22 @@ public:
             scope = scope->getParentScope();
         }
     }
+
+    ~SymbolTable(){
+        ScopeTable* temp = this->currentScope;
+        ScopeTable *st = nullptr;
+        while(temp != NULL){
+            st = temp->getParentScope();
+            delete temp;
+            temp = st;
+        }
+        cout << "Destroying the symbol table" << endl;
+    }
 };
 
 int main()
 {
-    /*SymbolTable* symbolTable = new SymbolTable();
-    ScopeTable * scope =  symbolTable->createScopeTable(7);
-    scope->insertSymbol("A","a",0);
-    scope->insertSymbol("B","b",0);
-    scope->insertSymbol("C","c",1);
-    scope->insertSymbol("D","d",2);
-    scope->insertSymbol("E","e",2);
-    scope->insertSymbol("F","f",2);
-    scope->insertSymbol("G","g",0);
-    scope->insertSymbol("H","h",0);
-    scope->insertSymbol("I","i",1);
-    scope->insertSymbol("J","j",2);
-    scope->insertSymbol("K","k",3);
-    scope->printScope();
-    scope->lookUpScope("B");
-    scope->lookUpScope("O");
-    scope->lookUpScope("J");
-    scope->lookUpScope("k");
-    scope->deleteSymbol("E");
-    scope->deleteSymbol("G");
-    scope->printScope();
-    scope->insertSymbol("D","d",0);
-    scope->insertSymbol("E","e",4);
-    scope->printScope();
-    symbolTable->exitScope();
-    symbolTable->exitScope();*/
-
     fstream file("in.txt");
-
     if(!file){
         cout << "File not found" << endl;
     }
@@ -338,9 +341,9 @@ int main()
         int noOfBuckets;
         getline(file,line,'\n');
         noOfBuckets = stringToInt(line);
-        //cout << noOfBuckets << endl;
         while(getline(file,line,'\n')){
             cout << line << endl;
+            line = line.append(" ");
             cout << endl;
             words = split(line,' ');
             if(words[0].compare("I")==0){
@@ -373,6 +376,7 @@ int main()
             }
             cout << endl;
         }
+        delete symbolTable;
     }
     return 0;
 }
