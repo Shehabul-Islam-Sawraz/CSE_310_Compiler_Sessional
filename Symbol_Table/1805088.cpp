@@ -257,7 +257,7 @@ public:
             this->currentScope = scope;
             scope->setParentScope(nullptr);
             scope->setScopeName(to_string(this->noOfChild + 1));
-            this->noOfChild=this->noOfChild+1;
+            this->noOfChild=this->noOfChild;
         }
         else{
             scope->setParentScope(this->currentScope);
