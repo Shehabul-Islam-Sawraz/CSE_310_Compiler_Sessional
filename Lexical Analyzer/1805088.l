@@ -30,8 +30,14 @@ DIGIT [0-9]
 %%
 {WHITESPACE}+ {}
 {NEWLINE} {line_count++;}
-{DIGIT}+ {cout << "Got a number" << endl;}
-{LETTER}+ {cout << "Got a word" << endl;}
+{DIGIT}+ {
+    fprintf(tokenout,"<NUMBER>");
+	fprintf(logout,"Line no %d: TOKEN <NUMBER> Lexeme %s found\n",line_count,yytext);
+}
+{LETTER}+ {
+    fprintf(tokenout,"<WORD>");
+	fprintf(logout,"Line no %d: TOKEN <WORD> Lexeme %s found\n",line_count,yytext);
+}
 <<EOF>> {
     cout << "\nTotal line number: " << line_count << "\nTotal word number: " << word_count << endl;
     return 0;
@@ -48,6 +54,9 @@ int main(int argc, char* argv[]){
         cout << "Can't open specified file!!" << endl;
         return 0;
     }
+
+    logout= fopen("log.txt","w");
+	tokenout= fopen("token.txt","w");
 
     yyin = fin;
     yylex();
