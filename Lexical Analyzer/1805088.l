@@ -30,14 +30,24 @@ DIGIT [0-9]
 %%
 {WHITESPACE}+ {}
 {NEWLINE} {line_count++;}
-{DIGIT}+ {
-    fprintf(tokenout,"<NUMBER>");
-	fprintf(logout,"Line no %d: TOKEN <NUMBER> Lexeme %s found\n",line_count,yytext);
-}
-{LETTER}+ {
-    fprintf(tokenout,"<WORD>");
-	fprintf(logout,"Line no %d: TOKEN <WORD> Lexeme %s found\n",line_count,yytext);
-}
+
+"if" 		|
+"else" 		|
+"switch" 	|
+"case" 		|
+"for" 		|
+"do" 		|
+"while" 	|
+"int" 		|
+"float" 	|
+"char" 		|
+"double" 	|
+"void" 		|
+"default" 	|
+"break" 	|
+"return"	|
+"continue" 	{addKeywords();}
+
 <<EOF>> {
     cout << "\nTotal line number: " << line_count << "\nTotal word number: " << word_count << endl;
     return 0;
