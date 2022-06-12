@@ -126,3 +126,13 @@ void handleSpecialStringCharacters(){
         str.append(1u, '\"');
     }
 }
+
+void addComment(string token){
+    printLogData(line_count, token);
+    int len = strlen(yytext);
+    for(int i=0;i<i<len;i++){
+        if(yytext[i]=='\n'){
+            line_count++;
+        }
+    }
+}
