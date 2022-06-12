@@ -22,8 +22,10 @@ void insertIntoHashTable(string token, string lexeme){
     if(scope==nullptr){
         scope = symbolTable->createScopeTable(NoOfBuckets);
     }
-    scope->insertSymbol(lexeme, token,(int)(hashValue(lexeme)%NoOfBuckets));
-    symbolTable->printAllScope();
+    bool success = scope->insertSymbol(lexeme, token,(int)(hashValue(lexeme)%NoOfBuckets));
+    if(success){
+        symbolTable->printAllScope();
+    }
 }
 
 void printLogData(int noOfLine, string token){
@@ -62,8 +64,10 @@ void addConstFloat(string token){
 void addConstChar(string token){
     string ch = yytext;
     ch = ch.substr(1,ch.length()-2);
-    printTokenWithSymbol(token,ch);
-    insertIntoHashTable(token,ch);
+    //printTokenWithSymbol(token,ch);
+    fprintf(tokenout, "<%s, %c>", token.data(), makeSpecialChar(yytext));
+    fprintf(logout,"Line no %d: TOKEN <%s> Lexeme %s found --> < %s, %c >\n",line_count, token.data(), yytext, token.data(), makeSpecialChar(yytext));
+    insertIntoHashTable(token,yytext);
 }
 
 void addIdentifier(string token){

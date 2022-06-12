@@ -44,6 +44,7 @@
     #define RTHIRD_TOKEN "RTHIRD"
     #define COMMA_TOKEN "COMMA"
     #define SEMICOLON_TOKEN "SEMICOLON"
+
 %}
 
 ANYTHING_EXCEPT_NEWLINE [^\r\n]

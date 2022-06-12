@@ -5,6 +5,47 @@ using namespace std;
 
 FILE *logout, *tokenout;
 
+char makeSpecialChar(char *ch) {
+    if(ch[1] != '\\'){
+        return ch[1];
+    }
+    else if(ch[1] == '\\'){
+        if(ch[2] == '0'){
+            return (char)0;
+        }
+        if(ch[2] == 'a'){
+            return (char)7;
+        }
+        if(ch[2] == 'b'){
+            return (char)8;
+        }
+        if(ch[2] == 't'){
+            return (char)9;
+        }
+        if(ch[2] == 'n'){
+            return (char)10;
+        }
+        if(ch[2] == 'v'){
+            return (char)11;
+        }
+        if(ch[2] == 'f'){
+            return (char)12;
+        }
+        if(ch[2] == 'r'){
+            return (char)13;
+        }
+        if(ch[2] == '\"'){
+            return (char)34;
+        }
+        if(ch[2] == '\''){
+            return (char)39;
+        }
+        if(ch[2] == '\\'){
+            return (char)92;
+        }		
+    }
+}
+
 vector<string> split(string str, char del){
     string temp = "";
     vector<string> words;
@@ -154,7 +195,8 @@ public:
 
     bool insertSymbol(string name,string type,int index){
         if(lookUpScope(name,index)!=nullptr){
-            cout << "<" << name << ", " << type << "> already exists in current ScopeTable" << endl;
+            //cout << "<" << name << ", " << type << "> already exists in current ScopeTable" << endl;
+            fprintf(logout,"< %s : %s > already exists in current ScopeTable\n",name.data(),type.data());
             return false;
         }
         SymbolInfo* symbol = new SymbolInfo(name,type);
