@@ -70,3 +70,11 @@ void addIdentifier(string token){
     printTokenWithSymbol(token);
     insertIntoHashTable(token,yytext);
 }
+
+void addOperators(string token){
+    string ch = yytext;
+    if(ch.compare("{")==0){
+        scope = symbolTable->createScopeTable(NoOfBuckets);
+    }
+    printTokenWithSymbol(token);
+}
