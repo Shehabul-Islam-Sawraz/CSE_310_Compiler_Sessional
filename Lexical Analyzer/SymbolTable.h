@@ -3,6 +3,8 @@
 
 using namespace std;
 
+FILE *logout, *tokenout;
+
 vector<string> split(string str, char del){
     string temp = "";
     vector<string> words;
@@ -173,7 +175,7 @@ public:
             x++;
             si->setNext(symbol);
         }
-        cout << "Inserted in ScopeTable #" << this->scopeName << " at position " << index << ", " << x << endl;
+        //cout << "Inserted in ScopeTable #" << this->scopeName << " at position " << index << ", " << x << endl;
         return true;
     }
 
@@ -203,21 +205,24 @@ public:
     }
 
     void printScope(){
-        cout << "ScopeTable #" << this->scopeName << endl;
+    	fprintf(logout,"ScopeTable #%s\n",this->scopeName.data());
+        //cout << "ScopeTable #" << this->scopeName << endl;
         cout << endl;
         SymbolInfo* si = nullptr;
         for(int i=0;i<noOfBuckets;i++){
             si = scopeTable[i];
-            cout << i << " --> ";
             if(si==nullptr){
-                cout << endl;
                 continue;
             }
+            fprintf(logout,"%d --> ", i);
+            //cout << i << " --> ";
             while(si!=nullptr){
-                cout << "< " << si->getName() << " : " << si->getType() << " >" << " ";
+                //cout << "< " << si->getName() << " : " << si->getType() << " >" << " ";
+                fprintf(logout,"< %s : %s > ",si->getName().data(), si->getType().data());
                 si = si->getNext();
             }
-            cout << endl;
+            //cout << endl;
+            fprintf(logout,"\n");
         }
     }
 
@@ -266,7 +271,7 @@ public:
             this->currentScope->setChildNo(this->currentScope->getChildNo() + 1);
             this->currentScope = scope;
         }
-        cout << "New ScopeTable with id " << this->currentScope->getScopeName() << " created" << endl;
+        //cout << "New ScopeTable with id " << this->currentScope->getScopeName() << " created" << endl;
         return scope;
     }
 

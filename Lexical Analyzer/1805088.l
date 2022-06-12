@@ -20,16 +20,30 @@
     #define BREAK_TOKEN "BREAK"
     #define RETURN_TOKEN "RETURN"
     #define CONTINUE_TOKEN "CONTINUE"
+
+    #define CONST_INT_TOKEN "CONST_INT"
+    #define CONST_FLOAT_TOKEN "CONST_FLOAT"
+    #define IDENTIFIER_TOKEN "ID"
 %}
 
 WHITESPACE [ \t\f\r\v]+
 LETTER [a-zA-Z]
 NEWLINE [\r?\n]
 DIGIT [0-9]
+DIGITS {DIGIT}+
+INTEGER {DIGITS}
+ALPHABET {LETTER}|_
+ALPHANUMERIC {ALPHABET}|{DIGIT}
+IDENTIFIER {ALPHABET}({ALPHANUMERIC})*
+FLOATING_POINT ({INTEGER})?(\.?{DIGITS})(E[+-]?{INTEGER})?
 
 %%
 {WHITESPACE}+ {}
 {NEWLINE} {line_count++;}
+
+{INTEGER} {addConstInt(CONST_INT_TOKEN);}
+{FLOATING_POINT} {addConstFloat(CONST_FLOAT_TOKEN);}
+
 
 "if" 		|
 "else" 		|
@@ -47,6 +61,8 @@ DIGIT [0-9]
 "break" 	|
 "return"	|
 "continue" 	{addKeywords();}
+
+{IDENTIFIER} {addIdentifier(IDENTIFIER_TOKEN);}
 
 <<EOF>> {
     cout << "\nTotal line number: " << line_count << "\nTotal word number: " << word_count << endl;
