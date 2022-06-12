@@ -1,5 +1,7 @@
 %option noyywrap
 
+%x HANDLE_STRING
+
 %{
     #include"LexicalAnalyzer.h"
 
@@ -45,6 +47,7 @@
     #define COMMA_TOKEN "COMMA"
     #define SEMICOLON_TOKEN "SEMICOLON"
 
+    #define STRING_TOKEN "STRING"
 %}
 
 ANYTHING_EXCEPT_NEWLINE [^\r\n]
@@ -62,6 +65,9 @@ FLOATING_POINT ({INTEGER})?(\.?{DIGITS})(E[+-]?{INTEGER})?
 
 CHAR_CONST ((\\{ANYTHING_EXCEPT_NEWLINE})|[^\\'(\r\n)])
 CHARACTER ('{CHAR_CONST}')
+
+STRING_START \"
+SPECIAL_STRING_CHARACTERS (\\[\\nt\'afrbv0\"])
 
 ADDOP [+-]
 MULOP [*/%]
@@ -87,6 +93,33 @@ SEMICOLON [;]
 {FLOATING_POINT} {addConstFloat(CONST_FLOAT_TOKEN);}
 {CHARACTER} {addConstChar(CONST_CHAR_TOKEN);}
 
+{STRING_START} {
+    BEGIN HANDLE_STRING;
+    str.append(yytext);
+    original_str.append(yytext);
+    string_line_no = line_count;
+}
+<HANDLE_STRING>\" {
+    str.append(yytext);
+    original_str.append(yytext);
+    yytext = str;
+    addString(STRING_TOKEN, original_str);
+    str = "";
+    original_str="";
+    BEGIN INITIAL;
+}
+<HANDLE_STRING>((\\){NEWLINE}) {
+    line_count++;
+    original_str.append(yytext);
+}
+<HANDLE_STRING>{SPECIAL_STRING_CHARACTERS} {
+    handleSpecialStringCharacters();
+}
+
+<HANDLE_STRING>. {
+    str.append(yytext);
+    original_str.append(yytext);
+}
 
 "if" 		|
 "else" 		|
