@@ -40,6 +40,11 @@ void printTokenWithSymbol(string token){
     printLogData(line_count, token);
 }
 
+void printTokenWithSymbol(string token, string lexeme){
+    fprintf(tokenout, "<%s, %s>", token.data(), lexeme.data());
+    printLogData(line_count, token);
+}
+
 void addKeywords(){
     printToken(toUpper(yytext));
 }
@@ -52,6 +57,13 @@ void addConstInt(string token){
 void addConstFloat(string token){
     printTokenWithSymbol(token);
     insertIntoHashTable(token,yytext);
+}
+
+void addConstChar(string token){
+    string ch = yytext;
+    ch = ch.substr(1,ch.length()-2);
+    printTokenWithSymbol(token,ch);
+    insertIntoHashTable(token,ch);
 }
 
 void addIdentifier(string token){
