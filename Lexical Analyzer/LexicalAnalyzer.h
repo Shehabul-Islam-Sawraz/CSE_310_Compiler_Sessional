@@ -34,6 +34,10 @@ void printLogData(int noOfLine, string token){
     fprintf(logout,"Line no %d: TOKEN <%s> Lexeme %s found\n",noOfLine, token.data(), yytext);
 }
 
+void printErrorLog(string error){
+    fprintf(logout,"Error at line no %d: %s %s found\n",line_count, error.data(), yytext);
+}
+
 void printToken(string token){
     fprintf(tokenout, "<%s>", token.data());
     printLogData(line_count, token);
@@ -127,12 +131,16 @@ void handleSpecialStringCharacters(){
     }
 }
 
-void addComment(string token){
-    printLogData(line_count, token);
+void clearNewline(){
     int len = strlen(yytext);
     for(int i=0;i<i<len;i++){
         if(yytext[i]=='\n'){
             line_count++;
         }
     }
+}
+
+void addComment(string token){
+    printLogData(line_count, token);
+    clearNewline();
 }

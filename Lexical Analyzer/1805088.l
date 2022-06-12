@@ -59,13 +59,26 @@ NEWLINE [\r?\n]
 DIGIT [0-9]
 DIGITS {DIGIT}+
 INTEGER {DIGITS}
+
+MUL_DEC_POINTS (\.)*
+TOO_MANY_DECIMAL {DIGIT}*((\.)+{DIGITS})+(E{MUL_DEC_POINTS}[+-]?{MUL_DEC_POINTS}{DIGITS})?{MUL_DEC_POINTS}{DIGIT}*
+
+ILL_NUM ({DIGITS}|{FLOATING_POINT})[E]*{FLOATING_POINT}*
+
 ALPHABET {LETTER}|_
 ALPHANUMERIC {ALPHABET}|{DIGIT}
 IDENTIFIER {ALPHABET}({ALPHANUMERIC})*
+NON_IDENTIFIER {DIGITS}({ALPHANUMERIC})*
+
 FLOATING_POINT ({INTEGER})?(\.?{DIGITS})(E[+-]?{INTEGER})?
 
 CHAR_CONST ((\\{ANYTHING_EXCEPT_NEWLINE})|[^\\'(\r\n)])
 CHARACTER ('{CHAR_CONST}')
+EMPTY_CHARACTER ('')
+MULTI_CHARACTER ('{CHAR_CONST}{2,}')
+UNFINISHED_CHARACTER '({CHAR_CONST}|\\)*
+
+ANYTHING ({ANYTHING_EXCEPT_NEWLINE}|{NEWLINE})
 
 STRING_START \"
 SPECIAL_STRING_CHARACTERS (\\[\\nt\'afrbv0\"])
@@ -101,6 +114,10 @@ SEMICOLON [;]
 
 {SINGLELINE_COMMENT} |
 {MULTILINE_COMMENT} {addComment(COMMENT_TOKEN);}
+{INCOMPLETE_MULTILINE_COMMENT} {
+    printErrorLog("Unfinished comment!");
+    clearNewline();
+}
 
 {INTEGER} {addConstInt(CONST_INT_TOKEN);}
 {FLOATING_POINT} {addConstFloat(CONST_FLOAT_TOKEN);}
@@ -133,6 +150,13 @@ SEMICOLON [;]
     str.append(yytext);
     original_str.append(yytext);
 }
+
+{TOO_MANY_DECIMAL} {printErrorLog("Too Many Decimal Points!");}
+{ILL_NUM} {printErrorLog("Ill Formed Number!");}
+{MULTI_CHARACTER} {printErrorLog("Multi Character Constant Error!");}
+{UNFINISHED_CHARACTER} {printErrorLog("Unfinished Character!");}
+{EMPTY_CHARACTER} {printErrorLog("Empty Character Constant Error!")}
+
 
 "if" 		|
 "else" 		|
@@ -169,6 +193,9 @@ SEMICOLON [;]
 
 
 {IDENTIFIER} {addIdentifier(IDENTIFIER_TOKEN);}
+{NON_IDENTIFIER} {printErrorLog("Invalid Suffix on numeric constant or invalid prefix on identifier!")}
+
+{ANYTHING} {printErrorLog("Unrecognized Character!")}
 
 <<EOF>> {
     cout << "\nTotal line number: " << line_count << "\nTotal word number: " << word_count << endl;
