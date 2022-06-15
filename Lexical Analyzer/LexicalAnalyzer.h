@@ -4,7 +4,7 @@
 #define NoOfBuckets 7
 
 int line_count = 1;
-int word_count = 0;
+int error_count = 0;
 string str="",original_str="";
 int string_line_no;
 
@@ -36,15 +36,16 @@ void printLogData(int noOfLine, string token){
 
 void printErrorLog(string error){
     fprintf(logout,"Error at line no %d: %s %s found\n",line_count, error.data(), yytext);
+    error_count++;
 }
 
 void printToken(string token){
-    fprintf(tokenout, "<%s>", token.data());
+    fprintf(tokenout, " <%s> ", token.data());
     printLogData(line_count, token);
 }
 
 void printTokenWithSymbol(string token){
-    fprintf(tokenout, "<%s, %s>", token.data(), yytext);
+    fprintf(tokenout, " <%s, %s> ", token.data(), yytext);
     printLogData(line_count, token);
 }
 
@@ -85,6 +86,9 @@ void addOperators(string token){
     string ch = yytext;
     if(ch.compare("{")==0){
         scope = symbolTable->createScopeTable(NoOfBuckets);
+    }
+    else if(ch.compare("}")==0){
+        scope = symbolTable->exitScope();
     }
     printTokenWithSymbol(token);
 }
@@ -133,7 +137,7 @@ void handleSpecialStringCharacters(){
 
 void clearNewline(){
     int len = strlen(yytext);
-    for(int i=0;i<i<len;i++){
+    for(int i=0;i<len;i++){
         if(yytext[i]=='\n'){
             line_count++;
         }

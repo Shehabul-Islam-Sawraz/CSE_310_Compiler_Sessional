@@ -179,7 +179,7 @@ public:
             int x=0;
             while(si!=nullptr){
                 if(si->getName().compare(name)==0){
-                    cout << "Found in ScopeTable #" << this->scopeName << " at position " << index << ", " << x << endl;
+                    //cout << "Found in ScopeTable #" << this->scopeName << " at position " << index << ", " << x << endl;
                     return si;
                 }
                 si = si->getNext();
@@ -236,7 +236,7 @@ public:
                 prev->setNext(next);
                 next->setPrevious(prev);
             }
-            cout << "Deleted Entry from current ScopeTable" << endl;
+            //cout << "Deleted Entry from current ScopeTable" << endl;
             delete si;
             return true;
         }
@@ -280,7 +280,7 @@ public:
             }
         }
         delete[] scopeTable;
-        cout << "Destroying the scope table" << endl;
+        //cout << "Destroying the scope table" << endl;
     }
 };
 
@@ -319,12 +319,12 @@ public:
 
     ScopeTable* exitScope(){
         if(this->currentScope==nullptr){
-            cout << "No Current Scope" << endl;
+            //cout << "No Current Scope" << endl;
             return this->currentScope;
         }
-        cout << "ScopeTable with id " << this->currentScope->getScopeName() << " removed" << endl;
+        //cout << "ScopeTable with id " << this->currentScope->getScopeName() << " removed" << endl;
         if(this->currentScope->getParentScope()==nullptr){
-            cout << "Destroying the First Scope" << endl;
+            //cout << "Destroying the First Scope" << endl;
         }
         ScopeTable* temp = this->currentScope->getParentScope();
         delete this->currentScope;
@@ -370,6 +370,6 @@ public:
             delete temp;
             temp = st;
         }
-        cout << "Destroying the symbol table" << endl;
+        //cout << "Destroying the symbol table" << endl;
     }
 };

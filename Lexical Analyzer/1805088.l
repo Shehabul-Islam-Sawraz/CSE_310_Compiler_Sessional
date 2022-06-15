@@ -5,24 +5,6 @@
 %{
     #include"LexicalAnalyzer.h"
 
-    //Define KEYWORDS
-    #define IF_TOKEN "IF"
-    #define ELSE_TOKEN "ELSE"
-    #define SWITCH_TOKEN "SWITCH"
-    #define CASE_TOKEN "CASE"
-    #define FOR_TOKEN "FOR"
-    #define DO_TOKEN "D0"
-    #define WHILE_TOKEN "WHILE"
-    #define INT_TOKEN "INT"
-    #define FLOAT_TOKEN "FLOAT"
-    #define CHAR_TOKEN "CHAR"
-    #define DOUBLE_TOKEN "DOUBLE"
-    #define VOID_TOKEN "VOID"
-    #define DEFAULT_TOKEN "DEFAULT"
-    #define BREAK_TOKEN "BREAK"
-    #define RETURN_TOKEN "RETURN"
-    #define CONTINUE_TOKEN "CONTINUE"
-
     //Define  CONSTANTS
     #define CONST_INT_TOKEN "CONST_INT"
     #define CONST_FLOAT_TOKEN "CONST_FLOAT"
@@ -55,7 +37,7 @@ ANYTHING_EXCEPT_NEWLINE [^\r\n]
 
 WHITESPACE [ \t\f\r\v]+
 LETTER [a-zA-Z]
-NEWLINE [\r?\n]
+NEWLINE \r?\n
 DIGIT [0-9]
 DIGITS {DIGIT}+
 INTEGER {DIGITS}
@@ -112,13 +94,6 @@ SEMICOLON [;]
 {WHITESPACE}+ {}
 {NEWLINE} {line_count++;}
 
-{SINGLELINE_COMMENT} |
-{MULTILINE_COMMENT} {addComment(COMMENT_TOKEN);}
-{INCOMPLETE_MULTILINE_COMMENT} {
-    printErrorLog("Unfinished comment!");
-    clearNewline();
-}
-
 {INTEGER} {addConstInt(CONST_INT_TOKEN);}
 {FLOATING_POINT} {addConstFloat(CONST_FLOAT_TOKEN);}
 {CHARACTER} {addConstChar(CONST_CHAR_TOKEN);}
@@ -132,8 +107,24 @@ SEMICOLON [;]
 <HANDLE_STRING>\" {
     str.append(yytext);
     original_str.append(yytext);
-    yytext = str;
-    addString(STRING_TOKEN, original_str);
+    fprintf(tokenout, " <%s, %s> ", "STRING", str.data());
+    fprintf(logout,"Line no %d: TOKEN <%s> Lexeme %s found --> < %s, %s >\n",string_line_no, "STRING", original_str.data(), "STRING", str.data());
+    str = "";
+    original_str="";
+    BEGIN INITIAL;
+}
+<HANDLE_STRING><<EOF>> {
+    fprintf(logout,"Error at ine no %d: %s  %s\n",string_line_no+1, "Unfinished String", str.data());
+    error_count++;
+    str = "";
+    original_str="";
+    BEGIN INITIAL;
+    return 0;
+}
+<HANDLE_STRING>{NEWLINE} {
+    fprintf(logout,"Error at ine no %d: %s  %s\n",string_line_no, "Unfinished String", str.data());
+    error_count++;
+    line_count++;
     str = "";
     original_str="";
     BEGIN INITIAL;
@@ -151,11 +142,18 @@ SEMICOLON [;]
     original_str.append(yytext);
 }
 
-{TOO_MANY_DECIMAL} {printErrorLog("Too Many Decimal Points!");}
-{ILL_NUM} {printErrorLog("Ill Formed Number!");}
-{MULTI_CHARACTER} {printErrorLog("Multi Character Constant Error!");}
-{UNFINISHED_CHARACTER} {printErrorLog("Unfinished Character!");}
-{EMPTY_CHARACTER} {printErrorLog("Empty Character Constant Error!")}
+{SINGLELINE_COMMENT} {addComment(COMMENT_TOKEN);}
+{MULTILINE_COMMENT} {addComment(COMMENT_TOKEN);}
+{INCOMPLETE_MULTILINE_COMMENT} {
+    printErrorLog("Unfinished comment");
+    clearNewline();
+}
+
+{TOO_MANY_DECIMAL} {printErrorLog("Too Many Decimal Points");}
+{ILL_NUM} {printErrorLog("Ill Formed Number");}
+{MULTI_CHARACTER} {printErrorLog("Multi Character Constant Error");}
+{UNFINISHED_CHARACTER} {printErrorLog("Unfinished Character");}
+{EMPTY_CHARACTER} {printErrorLog("Empty Character Constant Error");}
 
 
 "if" 		|
@@ -193,12 +191,14 @@ SEMICOLON [;]
 
 
 {IDENTIFIER} {addIdentifier(IDENTIFIER_TOKEN);}
-{NON_IDENTIFIER} {printErrorLog("Invalid Suffix on numeric constant or invalid prefix on identifier!")}
+{NON_IDENTIFIER} {printErrorLog("Invalid Suffix on numeric constant or invalid prefix on identifier");}
 
-{ANYTHING} {printErrorLog("Unrecognized Character!")}
+{ANYTHING} {printErrorLog("Unrecognized Character");}
 
 <<EOF>> {
-    cout << "\nTotal line number: " << line_count << "\nTotal word number: " << word_count << endl;
+    line_count--;
+    symbolTable->printAllScope();
+    fprintf(logout,"\nTotal Lines: %d\nTotal Errors: %d\n",line_count, error_count);
     return 0;
 }
 %%
