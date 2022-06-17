@@ -1,0 +1,8 @@
+a<ab<c<d>>
+a<aa>
+t<tt<tt>>>
+<foo<bar>>
+Foo< Foo >
+Foo<Bar<Bazz>>
+Foo< Bar < Bazz >
+Foo < Bar <

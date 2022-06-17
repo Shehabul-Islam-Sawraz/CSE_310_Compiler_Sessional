@@ -1,0 +1,8 @@
+Unfinished template at line no 1: a<ab<c<d>> found
+Template detected at line no 2: a<aa> found
+Invalid template at line no 3: t<tt<tt>>> found
+Invalid template at line no 4: <foo<bar>> found
+Invalid template at line no 5: Foo<Foo> found
+Template detected at line no 6: Foo<Bar<Bazz>> found
+Unfinished template at line no 7: Foo<Bar<Bazz> found
+Unfinished template at line no 8: Foo<Bar< found
