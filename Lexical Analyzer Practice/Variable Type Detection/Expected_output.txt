@@ -1,0 +1,10 @@
+Line no 1: Snake Case Variable "cse_18" found
+Line no 2: Snake Case Variable "buet_cse" found
+Line no 3: Undefined Case Variable "hello__world" found
+Line no 4: Snake Case Variable "programming" found
+Line no 5: Undefined Case Variable "_prev_str" found
+Line no 6: Undefined Case Variable "Next_str" found
+Line no 7: Undefined Case Variable "null_pointer_" found
+Line no 8: Camel Case Variable "camelCase" found
+Line no 9: Camel Case Variable "RegEx" found
+Line no 10: Camel Case Variable "GEtOverIt" found
