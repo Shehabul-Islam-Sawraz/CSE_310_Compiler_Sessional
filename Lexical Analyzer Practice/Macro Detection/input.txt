@@ -1,0 +1,7 @@
+#define NICE "nice"
+#define PI 3.1415
+#define foobar
+#define num 3.48E20
+#define charc c
+#define char 'c'
+#define int 255

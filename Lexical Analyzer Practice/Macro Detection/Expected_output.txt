@@ -1,0 +1,9 @@
+MACRO #define NICE "nice" (MACRO WITH VALUE) DETECTED at line no: 1
+
+MACRO #define PI 3.1415 (MACRO WITH VALUE) DETECTED at line no: 2
+
+MACRO #define num 3.48E20 (MACRO WITH VALUE) DETECTED at line no: 4
+
+MACRO #define char 'c' (MACRO WITH VALUE) DETECTED at line no: 6
+
+MACRO #define int 255 (MACRO WITH VALUE) DETECTED at line no: 7
