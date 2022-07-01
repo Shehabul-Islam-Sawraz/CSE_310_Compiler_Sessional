@@ -95,7 +95,7 @@ void addOperators(string token){
 
 void addString(string token, string str){
     fprintf(tokenout, "<%s, %s>", token.data(), yytext);
-    fprintf(logout,"Line no %d: TOKEN <%s> Lexeme %s found --> < %s, %s >\n",string_line_no, token.data(), str, token.data(), yytext);
+    fprintf(logout,"Line no %d: TOKEN <%s> Lexeme %s found --> < %s, %s >\n",string_line_no, token.data(), str.data(), token.data(), yytext);
 }
 
 void handleSpecialStringCharacters(){
