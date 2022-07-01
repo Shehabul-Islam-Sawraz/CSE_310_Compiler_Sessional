@@ -3,6 +3,8 @@
 %{
     #include<iostream>
     #include<bits/stdc++.h>
+    #include <algorithm>
+    #include <vector>
     using namespace std;
 
     FILE *logout;
@@ -10,12 +12,13 @@
     char prevChar='a';
     string str="", prevStr="";
     bool isInvalid=false;
+    std::vector<std::string> v;
 %}
 
 WHITESPACE [ \t\f\r\v]+
 NEWLINE \r?\n
 LETTER [a-zA-Z]
-ALPHABET {LETTER}+
+ID {LETTER}+
 TEMPLATE_START <
 TEMPLATE_END >
 
@@ -36,16 +39,18 @@ TEMPLATE_END >
     l_count=0, r_count=0, l_count1=0; 
 	str="", prevStr="";
     isInvalid = false;
+    v.clear();
 }
-{ALPHABET} {
+{ID} {
     if(l_count>=1){
         l_count--;
     }
-    if(!prevStr.compare(yytext)){
-        isInvalid = true;
-    }
-    str.append(yytext);
     prevStr = yytext;
+    if (std::find(v.begin(), v.end(), prevStr) != v.end()){
+        isInvalid = true;
+    }   
+    v.push_back(prevStr);
+    str.append(yytext);
 }
 {TEMPLATE_START} {
     if(str.compare("")==0){
