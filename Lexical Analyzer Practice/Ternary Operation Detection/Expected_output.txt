@@ -1,0 +1,5 @@
+Ternary oprator with RELOP found at line no 1: x = a > b ? a : b found
+Ternary oprator with RELOP found at line no 2: x == y ? 1 : 2 found
+Ternary oprator with LOGICOP found at line no 3: a || b ? x : y found
+Nested ternary operator found at line no 4: x = a > 2 ? 3 : a < 4 ? 4 : 5 found
+Nested ternary operator found at line no 5: x = a < 2 ? b > 3 ? 5 : 4 : a < 4 ? 4 : 5 found
