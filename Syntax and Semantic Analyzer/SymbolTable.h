@@ -5,7 +5,7 @@ using namespace std;
 
 //FILE *logout, *tokenout;
 extern FILE *logout, *errorout, *parserout;
-extern char* yytext;
+extern char *yytext;
 
 char makeSpecialChar(char *ch) {
     if(ch[1] != '\\'){
@@ -86,7 +86,10 @@ private:
     SymbolInfo* previous;
     SymbolInfo* next;
     string name, type;
-
+    string decType; // Stores which one is declared!! FUNCTION, VARIABLE, ARRAY
+    string varType; // Stores variable type!! INTEGER, FLOAT, DOUBLE, VOID
+    bool isFuncDeclared = false;
+    string funcRetType; // Stores return type of function
 public:
     SymbolInfo(string name,string type){
         this->name = name;
@@ -109,6 +112,30 @@ public:
 
     string getType(){
         return this->type;
+    }
+
+    void setDecType(string type){
+        this->decType = type;
+    }
+
+    string getDecType(){
+        return this->decType;
+    }
+
+    void setVarType(string type){
+        this->varType = type;
+    }
+
+    string getVarType(){
+        return this->varType;
+    }
+
+    void setFuncRetType(string type){
+        this->funcRetType = type;
+    }
+
+    string getFuncRetType(){
+        return this->funcRetType;
     }
 
     void setPrevious(SymbolInfo* previous){

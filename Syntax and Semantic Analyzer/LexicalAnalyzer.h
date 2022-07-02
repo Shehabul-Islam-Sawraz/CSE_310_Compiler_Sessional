@@ -32,7 +32,7 @@ string toUpper(string token){
 // }
 
 void insertIntoYylVal(string token, string lexeme){
-    yylval.symval = new SymbolInfo(lexeme, token);
+    yylval.symbolInfo = new SymbolInfo(lexeme, token);
 }
 
 void printLogData(int noOfLine, string token){
