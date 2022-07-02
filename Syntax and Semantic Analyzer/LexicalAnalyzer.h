@@ -40,7 +40,7 @@ void printLogData(int noOfLine, string token){
 }
 
 void printErrorLog(string error){
-    fprintf(logout,"LEXICAL Error at line no %d: %s < %s > found\n",line_count, error.data(), yytext);
+    fprintf(errorout,"LEXICAL Error at line no %d: %s < %s > found\n",line_count, error.data(), yytext);
     error_count++;
 }
 
@@ -101,7 +101,7 @@ void addOperators(string token){
 void addString(string token, string str){
     //fprintf(tokenout, "<%s, %s>", token.data(), yytext);
     //fprintf(logout,"Line no %d: TOKEN <%s> Lexeme %s found --> < %s, %s >\n",string_line_no, token.data(), str.data(), token.data(), yytext);
-    insertIntoYylVal(str,token);
+    insertIntoYylVal(token, str);
 }
 
 void handleSpecialStringCharacters(){

@@ -15,6 +15,7 @@
     #define ADDOP_TOKEN "ADDOP"
     #define MULOP_TOKEN "MULOP"
     #define INCOP_TOKEN "INCOP"
+    #define DECOP_TOKEN "DECOP"
     #define RELOP_TOKEN "RELOP"
     #define ASSIGNOP_TOKEN "ASSIGNOP"
     #define LOGICOP_TOKEN "LOGICOP"
@@ -76,8 +77,10 @@ SINGLELINE_COMMENT {SINGLELINE_COMMENT_START}({ANYTHING_EXCEPT_NEWLINE}*({SLASH}
 
 ADDOP [+-]
 MULOP [*/%]
-INCOP ("++"|"--")
+INCOP ("++")
+DECOP ("--")
 RELOP ("<"|"<="|">"|">="|"=="|"!=")
+BITOP ("&"|"|"|"^"|"<<"|">>")
 ASSIGNOP [=]
 LOGICOP ("&&"|"||")
 NOT [!]
@@ -94,9 +97,9 @@ SEMICOLON [;]
 {WHITESPACE}+ {}
 {NEWLINE} {line_count++;}
 
-{INTEGER} {addConstInt(CONST_INT_TOKEN);}
-{FLOATING_POINT} {addConstFloat(CONST_FLOAT_TOKEN);}
-{CHARACTER} {addConstChar(CONST_CHAR_TOKEN);}
+{INTEGER} {addConstInt(CONST_INT_TOKEN); return CONST_INT;}
+{FLOATING_POINT} {addConstFloat(CONST_FLOAT_TOKEN); return CONST_FLOAT;}
+{CHARACTER} {addConstChar(CONST_CHAR_TOKEN); return CONST_CHAR;}
 
 {STRING_START} {
     BEGIN HANDLE_STRING;
@@ -107,14 +110,14 @@ SEMICOLON [;]
 <HANDLE_STRING>\" {
     str.append(yytext);
     original_str.append(yytext);
-    fprintf(tokenout, " <%s, %s> ", "STRING", str.data());
-    fprintf(logout,"Line no %d: TOKEN <%s> Lexeme %s found --> < %s, %s >\n",string_line_no, "STRING", original_str.data(), "STRING", str.data());
     str = "";
     original_str="";
+    addString(STRING_TOKEN);
     BEGIN INITIAL;
+    return STRING;
 }
 <HANDLE_STRING><<EOF>> {
-    fprintf(logout,"Error at ine no %d: %s  %s\n",string_line_no+1, "Unfinished String", str.data());
+    fprintf(errorout,"LEXICAL Error at ine no %d: %s  < %s > \n",string_line_no+1, "Unfinished String", str.data());
     error_count++;
     str = "";
     original_str="";
@@ -122,7 +125,7 @@ SEMICOLON [;]
     return 0;
 }
 <HANDLE_STRING>{NEWLINE} {
-    fprintf(logout,"Error at ine no %d: %s  %s\n",string_line_no, "Unfinished String", str.data());
+    fprintf(errorout,"LEXICAL Error at ine no %d: %s  < %s >\n",string_line_no, "Unfinished String", str.data());
     error_count++;
     line_count++;
     str = "";
@@ -156,70 +159,50 @@ SEMICOLON [;]
 {EMPTY_CHARACTER} {printErrorLog("Empty Character Constant Error");}
 
 
-"if" 		|
-"else" 		|
-"switch" 	|
-"case" 		|
-"for" 		|
-"do" 		|
-"while" 	|
-"int" 		|
-"float" 	|
-"char" 		|
-"double" 	|
-"void" 		|
-"default" 	|
-"break" 	|
-"return"	|
-"continue" 	{addKeywords();}
+"if" 		{return IF;}
+"else" 		{return ELSE;}
+"switch" 	{return SWITCH;}
+"case" 		{return CASE;}
+"for" 		{return FOR;}
+"do" 		{return DO;}
+"while" 	{return WHILE;}
+"int" 		{return INT;}
+"float" 	{return FLOAT;}
+"char" 		{return CHAR;}
+"double" 	{return DOUBLE;}
+"void" 		{return VOID;}
+"default" 	{return DEFAULT;}
+"break" 	{return BREAK;}
+"return"	{return RETURN;}
+"continue" 	{return CONTINUE;}
 
-{ADDOP} {addOperators(ADDOP_TOKEN);}
-{MULOP} {addOperators(MULOP_TOKEN);}
-{INCOP} {addOperators(INCOP_TOKEN);}
-{RELOP} {addOperators(RELOP_TOKEN);}
-{ASSIGNOP} {addOperators(ASSIGNOP_TOKEN);}
-{LOGICOP} {addOperators(LOGICOP_TOKEN);}
-{NOT} {addOperators(NOT_TOKEN);}
-{LPAREN} {addOperators(LPAREN_TOKEN);}
-{RPAREN} {addOperators(RPAREN_TOKEN);}
-{LCURL} {addOperators(LCURL_TOKEN);}
-{RCURL} {addOperators(RCURL_TOKEN);}
-{LTHIRD} {addOperators(LTHIRD_TOKEN);}
-{RTHIRD} {addOperators(RTHIRD_TOKEN);}
-{COMMA} {addOperators(COMMA_TOKEN);}
-{SEMICOLON} {addOperators(SEMICOLON_TOKEN);}
+{ADDOP} {addOperators(ADDOP_TOKEN); return ADDOP;}
+{MULOP} {addOperators(MULOP_TOKEN); return MULOP;}
+{INCOP} {addOperators(INCOP_TOKEN); return INCOP}
+{DECOP} {addOperators(DECOP_TOKEN); return DECOP;}
+{RELOP} {addOperators(RELOP_TOKEN); return RELOP;}
+{ASSIGNOP} {addOperators(ASSIGNOP_TOKEN); return ASSIGNOP;}
+{LOGICOP} {addOperators(LOGICOP_TOKEN); return LOGICOP;}
+{BITOP} {addOperators(BITOP_TOKEN); return BITOP;}
+{NOT} {addOperators(NOT_TOKEN); return NOT;}
+{LPAREN} {addOperators(LPAREN_TOKEN); return LPAREN;}
+{RPAREN} {addOperators(RPAREN_TOKEN); return RPAREN;}
+{LCURL} {addOperators(LCURL_TOKEN); return LCURL;}
+{RCURL} {addOperators(RCURL_TOKEN); return RCURL;}
+{LTHIRD} {addOperators(LTHIRD_TOKEN); return LTHIRD;}
+{RTHIRD} {addOperators(RTHIRD_TOKEN); return RTHIRD;}
+{COMMA} {addOperators(COMMA_TOKEN); return COMMA;}
+{SEMICOLON} {addOperators(SEMICOLON_TOKEN); return SEMICOLON;}
 
 
-{IDENTIFIER} {addIdentifier(IDENTIFIER_TOKEN);}
+{IDENTIFIER} {addIdentifier(IDENTIFIER_TOKEN); return ID;}
 {NON_IDENTIFIER} {printErrorLog("Invalid Suffix on numeric constant or invalid prefix on identifier");}
 
 {ANYTHING} {printErrorLog("Unrecognized Character");}
 
 <<EOF>> {
     line_count--;
-    symbolTable->printAllScope();
     fprintf(logout,"\nTotal Lines: %d\nTotal Errors: %d\n",line_count, error_count);
     return 0;
 }
 %%
-
-int main(int argc, char* argv[]){
-    if(argc!=2){
-        cout << "Please provide input file name and try again" << endl;
-        return 0;
-    }
-    FILE *fin = fopen(argv[1],"r");
-    if(fin==NULL){
-        cout << "Can't open specified file!!" << endl;
-        return 0;
-    }
-
-    logout= fopen("log.txt","w");
-	tokenout= fopen("token.txt","w");
-
-    yyin = fin;
-    yylex();
-    fclose(yyin);
-    return 0;
-}
-
