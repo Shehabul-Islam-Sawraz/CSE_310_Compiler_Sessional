@@ -10,6 +10,7 @@
 #define VOID_TYPE "VOID"
 #define CHAR_TYPE "CHAR"
 
+FILE *logout, *errorout, *parserout;
 extern int line_count;
 extern int error_count;
 extern FILE *yyin;
@@ -35,7 +36,7 @@ enum NONTERMINAL_TYPE {
 	term, unary_expression, factor, argument_list, arguments, error
 };
 
-bool replaceAll(string &source, string &toReplace, string &replaceBy) {
+bool replaceAll(string source, string toReplace, string replaceBy) {
 	if (source.find(toReplace, 0) == string::npos){
 		return false;
 	}
@@ -46,7 +47,7 @@ bool replaceAll(string &source, string &toReplace, string &replaceBy) {
 	return true;
 }
 
-string formatCode(string &code){
+string formatCode(string code){
 	string formattedCode = code;
 	while (replaceAll(formattedCode, " ;", ";"));
 	replaceAll(formattedCode, ";", ";\n");
@@ -90,7 +91,11 @@ public:
 	}
 };
 
-NonTerminalHandler nonTerminalHandler = new NonTerminalHandler();
+NonTerminalHandler nonTerminalHandler;
+
+void yyerror(const char *s) {
+	cout << "Error at line: " << line_count << endl;
+}
 
 SymbolInfo* getSymbolInfoOfType(string type){
 	variableType = type;
@@ -102,7 +107,7 @@ void setValue(NONTERMINAL_TYPE nonterminal, string value){
 }
 
 void printRuleAndCode(NONTERMINAL_TYPE nonterminal, string rule){
-	fprintf(logout,"Line %d: %s : %s\n",line_count, rulename.data(), rule.data());
+	fprintf(logout,"Line %d: %s : %s\n",line_count, ruleName[nonterminal].data(), rule.data());
 	fprintf(logout,"%s\n", formatCode(nonTerminalHandler.getValue(nonterminal)).data());
 }
 

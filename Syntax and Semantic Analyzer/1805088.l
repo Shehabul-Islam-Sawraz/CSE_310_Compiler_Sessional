@@ -112,7 +112,7 @@ SEMICOLON [;]
     original_str.append(yytext);
     str = "";
     original_str="";
-    addString(STRING_TOKEN);
+    addString(STRING_TOKEN, original_str);
     BEGIN INITIAL;
     return STRING;
 }
@@ -178,7 +178,7 @@ SEMICOLON [;]
 
 {ADDOP} {addOperators(ADDOP_TOKEN); return ADDOP;}
 {MULOP} {addOperators(MULOP_TOKEN); return MULOP;}
-{INCOP} {addOperators(INCOP_TOKEN); return INCOP}
+{INCOP} {addOperators(INCOP_TOKEN); return INCOP;}
 {DECOP} {addOperators(DECOP_TOKEN); return DECOP;}
 {RELOP} {addOperators(RELOP_TOKEN); return RELOP;}
 {ASSIGNOP} {addOperators(ASSIGNOP_TOKEN); return ASSIGNOP;}

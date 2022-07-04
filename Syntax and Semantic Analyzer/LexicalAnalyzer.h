@@ -3,7 +3,8 @@
 #include<cstring>
 
 //#define NoOfBuckets 7
-
+extern FILE *logout, *errorout, *parserout;
+extern char *yytext;
 int line_count = 1;
 int error_count = 0;
 string str="",original_str="";
@@ -45,12 +46,12 @@ void printErrorLog(string error){
 }
 
 void printToken(string token){
-    fprintf(tokenout, " <%s> ", token.data());
+    //fprintf(tokenout, " <%s> ", token.data());
     printLogData(line_count, token);
 }
 
 void printTokenWithSymbol(string token){
-    fprintf(tokenout, " <%s, %s> ", token.data(), yytext);
+    //fprintf(tokenout, " <%s, %s> ", token.data(), yytext);
     printLogData(line_count, token);
 }
 
@@ -151,14 +152,17 @@ void clearNewline(){
 }
 
 string handleSingleComment(string s){
-    string str = s.substr(2,ch.length()-2);
-    int len = strlen(str);
+    string str = s.substr(2,s.length()-2),ans="";
+    int len = str.length();
     for(int i=0;i<len;i++){
         if(str[i]=='\n'|| str[i]=='\r' || str[i]=='\\'){
-            str[i]='';
+            
+        }
+        else{
+            ans+=str[i];
         }
     }
-    return str;
+    return ans;
 }
 
 void addComment(string token){
@@ -168,7 +172,7 @@ void addComment(string token){
         str = handleSingleComment(cmnt);
     }
     else{
-        str = s.substr(2,ch.length()-4);
+        str = token.substr(2,token.length()-4);
     }
     //printLogData(line_count, token);
     clearNewline();

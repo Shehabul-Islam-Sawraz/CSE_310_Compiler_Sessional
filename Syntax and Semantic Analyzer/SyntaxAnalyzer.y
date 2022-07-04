@@ -55,9 +55,9 @@ int main(int argc,char *argv[])
 		return 0;
 	}
 
-	logout.open("log.txt");
-	errorout.open("error.txt");
-	parserout.open("parser.txt");
+	logout= fopen("log.txt","w");
+	errorout= fopen("error.txt","w");
+	parserout= fopen("parser.txt","w");
 
     yyin = inputFile;
 	yyparse();
@@ -65,9 +65,9 @@ int main(int argc,char *argv[])
     fprintf(logout,"\nTotal Lines: %d\nTotal Errors: %d\n",line_count, error_count);
 
     fclose(yyin);
-	logout.close();
-	errorout.close();
-    parserout.close();
+	fclose(logout);
+    fclose(errorout);
+    fclose(parserout);
 
 	return 0;
 }
