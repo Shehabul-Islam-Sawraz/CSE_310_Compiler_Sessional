@@ -21,6 +21,8 @@ public:
         this->type = type;
         this->next = nullptr;
         this->previous = nullptr;
+        this->decType = "";
+        this->varType = "";
     }
 
     void setName(string name){
@@ -65,6 +67,14 @@ public:
 
     void setPrevious(SymbolInfo* previous){
         this->previous = previous;
+    }
+
+    bool getIsFuncDeclared(){
+        return this->isFuncDeclared;
+    }
+
+    void setIsFuncDeclared(bool isFuncDeclared){
+        this->isFuncDeclared = isFuncDeclared;
     }
 
     SymbolInfo* getPrevious(){
@@ -147,7 +157,7 @@ public:
         scopeTable[index] = nullptr;
     }
 
-    bool insertSymbol(string name,string type,int index){
+    bool insertSymbol(string name,string type,int index, string varType, string decType){
         if(lookUpScope(name,index)!=nullptr){
             //cout << "<" << name << ", " << type << "> already exists in current ScopeTable" << endl;
             //fprintf(logout,"< %s : %s > already exists in current ScopeTable\n",name.data(),type.data());
@@ -158,6 +168,8 @@ public:
         if(scopeTable[index]==nullptr){
             symbol->setNext(nullptr);
             symbol->setPrevious(nullptr);
+            symbol->setDecType(decType);
+            symbol->setVarType(varType);
             scopeTable[index] = symbol;
         }
         else{
@@ -168,6 +180,8 @@ public:
             }
             symbol->setNext(nullptr);
             symbol->setPrevious(si);
+            symbol->setDecType(decType);
+            symbol->setVarType(varType);
             x++;
             si->setNext(symbol);
         }

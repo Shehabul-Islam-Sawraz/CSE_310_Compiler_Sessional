@@ -14,13 +14,44 @@
 %token <symbolInfo>ID CONST_INT CONST_FLOAT CONST_CHAR ADDOP MULOP LOGICOP RELOP BITOP
 
 %type <symbolInfo>type_specifier expression logic_expression rel_expression simple_expression term unary_expression factor variable
-%type<vectorsymbol> declaration_list var_declaration func_declaration parameter_list unit expression_statement arguments argument_list statement statements compound_statement func_definition program 
+%type <vectorsymbol>declaration_list var_declaration func_declaration parameter_list unit expression_statement arguments argument_list statement statements compound_statement func_definition program 
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %error-verbose
 
 %%
+start: program
+                        {
+                                setValue(start,popValue(program));
+                                printRuleAndCode(start,"program");
+                        }
+                ;
+
+program: program unit
+                |   unit
+                        {
+                            setValue(program,popValue(unit));
+                            printRuleAndCode(program,"unit");
+                        }
+                ;
+
+unit:   var_declaration
+                        {
+                            setValue(unit,popValue(var_declaration));
+                            printRuleAndCode(unit,"var_declaration");
+                        }
+                |   func_declaration
+                |   func_definition
+                ;
+
+var_declaration: type_specifier declaration_list SEMICOLON
+                        {
+                            setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ ";");
+                            printRuleAndCode(var_declaration,"type_specifier declaration_list SEMICOLON");
+                        }
+                ;
+
 type_specifier : INT
                         {
                             $$ = getSymbolInfoOfType(INT_TYPE);
@@ -40,6 +71,22 @@ type_specifier : INT
                             printRuleAndCode(type_specifier,"VOID");
                         }
                 ;
+
+declaration_list : declaration_list COMMA ID
+                        {
+                            insertVar($3);
+                            setValue(declaration_list, popValue(declaration_list)+","+$3->getName());
+                            printRuleAndCode(declaration_list,"declaration_list COMMA ID");
+                        }
+                |   declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
+                |   ID
+                        {
+                            insertVar($1);
+                            setValue(declaration_list,$1->getName());
+                            printRuleAndCode(declaration_list,"ID");
+                        }
+                |   ID LTHIRD CONST_INT RTHIRD
+                ;    
 %%
 
 int main(int argc,char *argv[])
