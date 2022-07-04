@@ -29,6 +29,10 @@ start: program
                 ;
 
 program: program unit
+                        {
+                            setValue(program,popValue(program) + " " + popValue(unit));
+                            printRuleAndCode(program,"program unit");
+                        }
                 |   unit
                         {
                             setValue(program,popValue(unit));
@@ -42,7 +46,36 @@ unit:   var_declaration
                             printRuleAndCode(unit,"var_declaration");
                         }
                 |   func_declaration
+                        {
+                            setValue(unit,popValue(func_declaration));
+                            printRuleAndCode(unit,"func_declaration");
+                        }
                 |   func_definition
+                ;
+
+func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
+                |   type_specifier ID LPAREN RPAREN SEMICOLON
+                        {
+                            insertFunc($2, $1);
+                            setValue(func_declaration,popValue(type_specifier)+$2->getName()+"("+")"+";");
+                            printRuleAndCode(func_declaration,"type_specifier ID LPAREN RPAREN SEMICOLON");
+                        }
+                ;
+
+parameter_list: parameter_list COMMA type_specifier ID
+                        {
+                            insertIntoParamList($4);
+                            setValue(parameter_list,popValue(parameter_list)+","+popValue(type_specifier)+$4->getName());
+					        printRuleAndCode(parameter_list,"parameter_list COMMA type_specifier ID");
+                        }
+                |   parameter_list COMMA type_specifier
+                |   type_specifier ID
+                        {
+                            insertIntoParamList($2);
+                            setValue(parameter_list,popValue(type_specifier)+$2->getName());
+					        printRuleAndCode(parameter_list,"type_specifier ID");
+                        }
+                |   type_specifier
                 ;
 
 var_declaration: type_specifier declaration_list SEMICOLON
@@ -87,6 +120,53 @@ declaration_list : declaration_list COMMA ID
                         }
                 |   ID LTHIRD CONST_INT RTHIRD
                 ;    
+
+variable: ID            
+                        {
+                            $$ = getSymbolInfoOfType($1);
+                            setValue(variable,$1->getName());
+				            printRuleAndCode(variable,"ID");
+                        }
+                |   ID LTHIRD expression RTHIRD
+                ;
+
+simple_expression: term
+                        {
+                            setValue(simple_expression,popValue(term));
+					        printRuleAndCode(simple_expression,"term");
+                        }
+                |   simple_expression ADDOP term
+                ;
+
+term:	unary_expression
+                        {
+                            setValue(term,popValue(unary_expression));
+					        printRuleAndCode(term,"unary_expression");
+                        }
+                |   term MULOP unary_expression
+                ;
+
+unary_expression: ADDOP unary_expression
+                |   NOT unary_expression
+                |   factor
+                        {
+                            setValue(unary_expression,popValue(factor));
+					        printRuleAndCode(unary_expression,"factor");
+                        }
+                ;
+
+factor: variable        
+                        {
+                            setValue(factor,popValue(variable));
+			                printRuleAndCode(factor,"variable");
+                        }
+                |   ID LPAREN argument_list RPAREN
+                |   LPAREN expression RPAREN
+                |   CONST_INT
+                |   CONST_FLOAT
+                |   variable INCOP
+                |   variable DECOP
+                ;
 %%
 
 int main(int argc,char *argv[])

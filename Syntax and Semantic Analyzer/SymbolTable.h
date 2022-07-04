@@ -15,6 +15,7 @@ private:
     string varType; // Stores variable type!! INTEGER, FLOAT, DOUBLE, VOID
     bool isFuncDeclared = false;
     string funcRetType; // Stores return type of function
+    vector<string> paramList;
 public:
     SymbolInfo(string name,string type){
         this->name = name;
@@ -39,6 +40,14 @@ public:
 
     string getType(){
         return this->type;
+    }
+
+    void setParamList(vector<string> paramList){
+        this->paramList = paramList;
+    }
+
+    vector<string> getParamList(){
+        return this->paramList;
     }
 
     void setDecType(string type){

@@ -18,6 +18,9 @@ extern char *yytext;
 string variableType;
 size_t syntax_error_count = 0;
 size_t warning_count = 0;
+size_t noOfParam = 0
+vector<string> paramList;
+vector<SymbolInfo> parameters;
 
 ScopeTable* scope = nullptr;
 SymbolTable* symbolTable = new SymbolTable();
@@ -154,7 +157,7 @@ SymbolInfo* insertVar(SymbolInfo* var){
 	}
 	else {
 		if(symbolTable->lookUp(var->getName(), (int)(hashValue(var->getName())%NoOfBuckets))!=nullptr){
-			printError("Multiple declaration of "+var->getName());
+			printError("Multiple declaration of " + var->getName());
 		}
 		else{
 			var->setDecType(VARIABLE);
@@ -164,6 +167,30 @@ SymbolInfo* insertVar(SymbolInfo* var){
 		}
 	}
 	return nullptr;
+}
+
+void insertFunc(SymbolInfo* func, SymbolInfo* retType){
+	if(symbolTable->lookUp(func->getName(), (int)(hashValue(func->getName())%NoOfBuckets))!=nullptr){
+		printError("Multiple declaration of "+printError("Multiple declaration of " + var->getName());->getName());
+		return;
+	}
+	func->setType("ID");
+	func->setDecType(FUNCTION);
+	func->setVarType(retType->getName());
+	SymbolInfo* temp = insertIntoSymbolTable(func);
+	temp->setFuncRetType(retType->getName());
+	temp->setParamList(paramList);
+}
+
+void insertIntoParamList(SymbolInfo* var){
+	paramList.push_back(variableType);
+	noOfParam++;
+	//var->setDecType(VARIABLE);
+	//var->setVarType(variableType);
+	SymbolInfo* temp = new SymbolInfo(var->getName(), var->getType());
+	temp->setDecType(VARIABLE);
+	temp->setVarType(variableType);
+	parameters.push_back(*temp);
 }
 
 
