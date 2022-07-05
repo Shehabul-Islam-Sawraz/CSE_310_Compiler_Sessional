@@ -159,6 +159,11 @@ void printError(string error_msg){
 	syntax_error_count++;
 }
 
+void printWarning(string error_msg){
+	fprintf(errorout,"Warning at line %d: %s\n",line_count, error_msg.data());
+	warning_count++;
+}
+
 SymbolInfo* insertVar(SymbolInfo* var){
 	if(variableType==VOID_TYPE) { // Semantic error
 		printError("Variable type cannot be void");
@@ -202,8 +207,12 @@ void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
 		printError("Unnamed prototype parameter not allowed in definition of function " + funcVal->getName());
 	}
 	else if(temp!=nullptr){
-		if(temp->getIsFuncDeclared()){
-			printError("Function " + temp->getName() + " already defined")
+		if(temp->getDecType()!=FUNCTION){
+			printError("Multiple declaration of "+temp->getName());
+			return;
+		}
+		else if(temp->getIsFuncDeclared()){
+			printError("Multiple Definition of " + temp->getName());
 			return;
 		}
 		else if(temp->getFuncRetType()!=retType->getName()){
@@ -236,6 +245,14 @@ void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
 }
 
 void insertIntoParamList(SymbolInfo* var){
+	int l = parameters.size();
+	string str = var->getName();
+	for(int i=0;i<l;i++){
+		if(parameters[i]->getName().compare(str)==0){
+			printError("Multiple declaration of "+str+" in parameters");
+			break;
+		}
+	}
 	paramList.push_back(variableType);
 	noOfParam++;
 	//var->setDecType(VARIABLE);
@@ -268,12 +285,106 @@ SymbolInfo* getVariable(SymbolInfo* sym){
 	return nullptr;
 }
 
-// SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
-// 	if (left->getVarType() == VOID_TYPE || right->getVarType() == VOID_TYPE) {
-// 		printError("Operand of void type.");
-// 		return nullptr;
-// 	}
-// }
+SymbolInfo* getConstValue(SymbolInfo* sym, string varType){
+	sym->setDecType(VARIABLE);
+	sym->setVarType(varType);
+	if (varType == FLOAT_TYPE) {
+		sym->floatValues.push_back(0);
+		sym->fltValue() = static_cast<float>(atof(constVal->getName().data()));
+	} else if (varType == INT_TYPE) {
+		sym->intValues.push_back(0);
+		sym->intValue() = atoi(constVal->getName().data());
+	}
+	return sym;
+}
+
+SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
+	if (left->getVarType() == VOID_TYPE || right->getVarType() == VOID_TYPE) {
+		printError("Operand of void type.");
+		return nullptr;
+	}
+	string addop = op->getName();
+	SymbolInfo* opVal = new SymbolInfo("","");
+	if(left->getVarType()==FLOAT_TYPE || right->getVarType()==FLOAT_TYPE){
+		getConstValue(opVal,FLOAT_TYPE);
+	}
+	else{
+		getConstValue(opVal,INT_TYPE);
+	}
+	if(addop=="+"){
+		if(left->isVariable()){
+			if(right->isVariable()){
+				if(left->getVarType()==FLOAT_TYPE){
+					if(right->getVarType()==INT_TYPE){
+						opVal->fltValue() = left->fltValue() + right->intValue();
+					}
+					else{
+						opVal->fltValue() = left->fltValue() + right->fltValue();
+					}
+				}
+				else if(right->getVarType()==FLOAT_TYPE){
+					if (left->getVarType()==INT_TYPE) {
+						opVal->fltValue() = left->intValue() + right->fltValue();
+					} else {
+						opVal->fltValue() = left->fltValue() + right->fltValue();
+					}
+				}
+				else if (right->getVarType()==INT_TYPE && left->getVarType()==INT_TYPE){
+					opVal->setVarType(INT_TYPE);
+					opVal->intValue() = left->intValue()+right->intValue();
+				}
+			}
+		}
+	}
+	else if(addop=="-"){
+		if(left->isVariable()){
+			if(right->isVariable()){
+				if(left->getVarType()==FLOAT_TYPE){
+					if(right->getVarType()==INT_TYPE){
+						opVal->fltValue() = left->fltValue() - right->intValue();
+					}
+					else{
+						opVal->fltValue() = left->fltValue() - right->fltValue();
+					}
+				}
+				else if(right->getVarType()==FLOAT_TYPE){
+					if (left->getVarType()==INT_TYPE) {
+						opVal->fltValue() = left->intValue() - right->fltValue();
+					} else {
+						opVal->fltValue() = left->fltValue() - right->fltValue();
+					}
+				}
+				else if (right->getVarType()==INT_TYPE && left->getVarType()==INT_TYPE){
+					opVal->setVarType(INT_TYPE);
+					opVal->intValue() = left->intValue() - right->intValue();
+				}
+			}
+		}
+	}
+	return opVal;
+}
+
+SymbolInfo* getAssignExpVal(SymbolInfo* left, SymbolInfo* right){
+	if(left->getVarType()==VOID_TYPE || right->getVarType()==VOID_TYPE){
+		printError("Assign Operation on void type");
+		return nullptr;
+	}
+	if(left->isVariable()){
+		if(right->getVarType()==INT_TYPE){
+			if(left->getVarType()==FLOAT_TYPE){
+				printWarning("Assigning integer value to float");
+			}
+			left->setVarValue(right->intValue());
+		}
+		else{
+			if(left->getVarType()==INT_TYPE){
+				printWarning("Assigning float value to integer");
+			}
+			left->setVarValue(right->fltValue());
+		}
+	}
+	return left;
+}
 
 void checkFuncReturnType(SymbolInfo *sym) {
 	if (currentFunc != nullptr && currentFunc->getFuncRetType() != sym->getVarType()) {
@@ -288,7 +399,7 @@ void createScope(){
 	}
 	clearFunctionParam();
 }
-
+`
 void exitScope(){
 	currentFunc = nullptr;
 	symbolTable->printAllScope(logout);

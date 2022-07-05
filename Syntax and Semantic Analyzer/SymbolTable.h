@@ -16,7 +16,12 @@ private:
     bool isFuncDeclared = false;
     string funcRetType; // Stores return type of function
     vector<string> paramList;
+    size_t arrSize;
+    int defInt = 0;
+    float defFloat = 0.0;
 public:
+    vector<int> intValues;
+    vector<float> floatValues;
     SymbolInfo(string name,string type){
         this->name = name;
         this->type = type;
@@ -62,6 +67,12 @@ public:
 
     void setVarType(string type){
         this->varType = type;
+        if (varType == INT_TYPE){
+            intValues.push_back(0);
+        }   
+		else if (varType == FLOAT_TYPE){
+            floatValues.push_back(0);
+        }
     }
 
     string getVarType(){
@@ -70,6 +81,7 @@ public:
 
     void setFuncRetType(string type){
         this->funcRetType = type;
+        setVarType(type);
     }
 
     string getFuncRetType(){
@@ -87,6 +99,17 @@ public:
     void setIsFuncDeclared(bool isFuncDeclared){
         this->isFuncDeclared = isFuncDeclared;
     }
+
+    size_t getArrSize() const {
+		return arrSize;
+	}
+
+	void setArrSize(size_t arrSize) {
+		if (!isArray()){
+            return;
+        }
+		this->arrSize = arrSize;
+	}
 
     SymbolInfo* getPrevious(){
         return this->previous;
@@ -114,6 +137,46 @@ public:
 
     bool isVoidFunc(){
         return isFunction() && getFuncRetType()==VOID_TYPE;
+    }
+
+    int setVarValue(int val) {
+		if (intValues.empty()){
+            intValues.push_back(val);
+        }
+		else{
+            intValues[0] = val;
+        }
+		return intValues[0];
+	}
+
+	float setVarValue(float val) {
+		if (floatValues.empty()){
+            floatValues.push_back(val);
+        }
+		else{
+            floatValues[0] = val;
+        }
+		return floatValues[0];
+	}
+
+    int &intValue(){
+        if(decType==VARIABLE && varType==INT_TYPE){
+            if(!intValues.size()){
+                intValues.push_back(0);
+            }
+            return intValues[0];
+        }
+        return defInt;
+    }
+
+    int &fltValue(){
+        if(decType==VARIABLE && varType==FLOAT_TYPE){
+            if(!floatValues.size()){
+                floatValues.push_back(0);
+            }
+            return floatValues[0];
+        }
+        return defFloat;
     }
 
     ~SymbolInfo(){

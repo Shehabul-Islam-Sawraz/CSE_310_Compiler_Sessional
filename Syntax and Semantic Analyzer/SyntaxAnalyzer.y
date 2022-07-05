@@ -153,6 +153,10 @@ statements: statement
 				            printRuleAndCode(statements,"statement");
                         }
                 |   statements statement
+                        {
+                            setValue(statements,popValue(statements)+popValue(statement));
+				            printRuleAndCode(statements,"statements statement");
+                        }
                 ;
 
 statement: var_declaration 
@@ -171,7 +175,7 @@ statement: var_declaration
 				            printRuleAndCode(statement,"compound_statement");
                         }
                 |   FOR LPAREN expression_statement expression_statement expression RPAREN statement
-                |   IF LPAREN expression RPAREN statement
+                |   IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
                 |   IF LPAREN expression RPAREN statement ELSE statement
                 |   WHILE LPAREN expression RPAREN statement
                 |   PRINTLN LPAREN ID RPAREN SEMICOLON
@@ -180,6 +184,18 @@ statement: var_declaration
                             checkFuncReturnType($2);
                             setValue(statement,"return"+popValue(expression)+";");
 				            printRuleAndCode(statement,"RETURN expression SEMICOLON");
+                        }
+                ;
+
+expression_statement: SEMICOLON
+                        {
+                            setValue(expression_statement,";");
+					        printRuleAndCode(expression_statement,"SEMICOLON");
+                        }
+                |   expression SEMICOLON
+                        {
+                            setValue(expression_statement,popValue(expression)+";");
+					        printRuleAndCode(expression_statement,"expression SEMICOLON");
                         }
                 ;
 
@@ -198,6 +214,11 @@ expression: logic_expression
 				            printRuleAndCode(expression,"logic_expression");
                         }
                 |   variable ASSIGNOP logic_expression
+                        {
+                            $$ = getAssignExpVal($1, $3);
+                            setValue(expression,popValue(variable)+"="+popValue(logic_expression));
+					        printRuleAndCode(expression,"variable ASSIGNOP logic_expression");
+                        }
                 ;
 
 logic_expression: rel_expression
@@ -223,6 +244,7 @@ simple_expression: term
                         }
                 |   simple_expression ADDOP term
                         {
+                            $$ = getAddOpVal($1,$2,$3);
                             setValue(simple_expression,popValue(simple_expression)+$2->getName()+popValue(term));
 					        printRuleAndCode(simple_expression,"simple_expression ADDOP term");
                         }
@@ -253,7 +275,17 @@ factor: variable
                 |   ID LPAREN argument_list RPAREN
                 |   LPAREN expression RPAREN
                 |   CONST_INT
+                        {
+                            $$ = getConstValue($1,INT_TYPE);
+                            setValue(factor,$1->getName());
+			                printRuleAndCode(factor,"CONST_INT");
+                        }
                 |   CONST_FLOAT
+                        {
+                            $$ = getConstValue($1,FLOAT_TYPE);
+                            setValue(factor,$1->getName());
+			                printRuleAndCode(factor,"CONST_FLOAT");
+                        }
                 |   variable INCOP
                 |   variable DECOP
                 ;
