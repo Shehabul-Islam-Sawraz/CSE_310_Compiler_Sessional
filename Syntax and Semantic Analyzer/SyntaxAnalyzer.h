@@ -18,9 +18,11 @@ extern char *yytext;
 string variableType;
 size_t syntax_error_count = 0;
 size_t warning_count = 0;
+
 size_t noOfParam = 0
 vector<string> paramList;
 vector<SymbolInfo> parameters;
+SymbolInfo* currentFunc = nullptr;
 
 ScopeTable* scope = nullptr;
 SymbolTable* symbolTable = new SymbolTable();
@@ -118,6 +120,12 @@ void yyerror(const char *s) {
 	cout << "Error at line: " << line_count << endl;
 }
 
+void clearFunctionParam(){
+	paramList.clear();
+	parameters.clear();
+	noOfParam = 0;
+}
+
 SymbolInfo* insertIntoSymbolTable(SymbolInfo* symbol){
     if(scope==nullptr){
         scope = symbolTable->createScopeTable(NoOfBuckets);
@@ -172,6 +180,11 @@ SymbolInfo* insertVar(SymbolInfo* var){
 void insertFunc(SymbolInfo* func, SymbolInfo* retType){
 	if(symbolTable->lookUp(func->getName(), (int)(hashValue(func->getName())%NoOfBuckets))!=nullptr){
 		printError("Multiple declaration of "+printError("Multiple declaration of " + var->getName());->getName());
+		clearFunctionParam();
+		return;
+	}
+	if (noOfParam && find(paramList.begin(), paramList.end(), VOID_TYPE) != paramList.end()) {
+		printErrorLog("Parameters can't be of void type in function "+func->getName());
 		return;
 	}
 	func->setType("ID");
@@ -180,6 +193,46 @@ void insertFunc(SymbolInfo* func, SymbolInfo* retType){
 	SymbolInfo* temp = insertIntoSymbolTable(func);
 	temp->setFuncRetType(retType->getName());
 	temp->setParamList(paramList);
+}
+
+void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
+	SymbolInfo* temp = symbolTable->lookUp(func->getName(),(int)(hashValue(func->getName())%NoOfBuckets));
+	// to prevent f(int x,float,int y){} type defn but f(void){} allowed
+	if (!(paramList.size() == 1 && argsType[0] == VOID_TYPE) && paramList.size() != noOfParam) {
+		printError("Unnamed prototype parameter not allowed in definition of function " + funcVal->getName());
+	}
+	else if(temp!=nullptr){
+		if(temp->getIsFuncDeclared()){
+			printError("Function " + temp->getName() + " already defined")
+			return;
+		}
+		else if(temp->getFuncRetType()!=retType->getName()){
+			printError("Return type mismatch with function declaration in function "+temp->getName());
+			return;
+		}
+		else if(temp->getParamList().size()!=paramList.size()){
+			printError("Total number of arguments mismatch with declaration in function "+temp->getName());
+			return;
+		}
+		vector<string> v = temp->getParamList();
+		bool iserr = false;
+		for(int i=0;i,paramList.size()){
+			if(v[i].compare(paramList[i])!=0){
+				printError((i+1)+" th argument mismatch in function "+temp->getName());
+				iserr = true;
+			}
+		}
+		if(iserr){
+			return;
+		}
+		temp->setIsFuncDeclared(true);
+	}
+	else{
+		insertFunc(func,retType);
+		func = symbolTable->lookUp(func->getName(),(int)(hashValue(func->getName())%NoOfBuckets));
+		func->setIsFuncDeclared(true);
+		currentFunc = func;
+	}
 }
 
 void insertIntoParamList(SymbolInfo* var){
@@ -193,4 +246,51 @@ void insertIntoParamList(SymbolInfo* var){
 	parameters.push_back(*temp);
 }
 
+SymbolInfo* getVariable(SymbolInfo* sym){
+	SymbolInfo* temp = symbolTable->lookUp(sym->getName(),(int)(hashValue(sym->getName())%NoOfBuckets));
+	if(temp==nullptr){
+		printError("Undeclared variable "+sym->getName());
+	}
+	else if(!sym->isVariable()){
+		if(sym->isArray()){
+			printError("Type mismatch, "+sym->getName()+" is an array");
+		}
+		else if(sym->isFunction()){
+			printError("Type mismatch, "+sym->getName()+" is an function");
+		}
+		else{
+			printError("Type mismatch, "+sym->getName()+" is not a variable");
+		}
+	}
+	else{
+		return temp;
+	}
+	return nullptr;
+}
 
+// SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
+// 	if (left->getVarType() == VOID_TYPE || right->getVarType() == VOID_TYPE) {
+// 		printError("Operand of void type.");
+// 		return nullptr;
+// 	}
+// }
+
+void checkFuncReturnType(SymbolInfo *sym) {
+	if (currentFunc != nullptr && currentFunc->getFuncRetType() != sym->getVarType()) {
+		printError(currentFunc->getName() + ": function return type does not match with return expression type");
+	}
+}
+
+void createScope(){
+	scope = symbolTable->createScopeTable(NoOfBuckets);
+	for(auto param: parameters){
+		insertIntoSymbolTable(param);
+	}
+	clearFunctionParam();
+}
+
+void exitScope(){
+	currentFunc = nullptr;
+	symbolTable->printAllScope(logout);
+	symbolTable->exitScope();
+}

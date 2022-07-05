@@ -24,6 +24,8 @@ public:
         this->previous = nullptr;
         this->decType = "";
         this->varType = "";
+        this->isFuncDeclared = false;
+        this->funcRetType = "";
     }
 
     void setName(string name){
@@ -96,6 +98,22 @@ public:
 
     SymbolInfo* getNext(){
         return this->next;
+    }
+
+    bool isVariable(){
+        return decType==VARIABLE;
+    }
+
+    bool isFunction(){
+        return decType==FUNCTION;
+    }
+
+    bool isArray(){
+        return decType==ARRAY;
+    }
+
+    bool isVoidFunc(){
+        return isFunction() && getFuncRetType()==VOID_TYPE;
     }
 
     ~SymbolInfo(){
@@ -223,8 +241,8 @@ public:
         return false;
     }
 
-    void printScope(){
-    	//fprintf(logout,"ScopeTable #%s\n",this->scopeName.data());
+    void printScope(FILE* logout){
+    	fprintf(logout,"ScopeTable #%s\n",this->scopeName.data());
         //cout << "ScopeTable #" << this->scopeName << endl;
         cout << endl;
         SymbolInfo* si = nullptr;
@@ -233,15 +251,15 @@ public:
             if(si==nullptr){
                 continue;
             }
-            //fprintf(logout,"%d --> ", i);
+            fprintf(logout,"%d --> ", i);
             //cout << i << " --> ";
             while(si!=nullptr){
                 //cout << "< " << si->getName() << " : " << si->getType() << " >" << " ";
-                //fprintf(logout,"< %s : %s > ",si->getName().data(), si->getType().data());
+                fprintf(logout,"< %s : %s > ",si->getName().data(), si->getType().data());
                 si = si->getNext();
             }
             //cout << endl;
-            //fprintf(logout,"\n");
+            fprintf(logout,"\n");
         }
     }
 
@@ -324,16 +342,16 @@ public:
         return nullptr;
     }
 
-    void printCurrentScope(){
+    void printCurrentScope(FILE* logout){
         if(this->currentScope!=nullptr){
-            this->currentScope->printScope();
+            this->currentScope->printScope(logout);
         }
     }
 
-    void printAllScope(){
+    void printAllScope(FILE* logout){
         ScopeTable* scope = this->currentScope;
         while(scope!=nullptr){
-            scope->printScope();
+            scope->printScope(logout);
             cout << endl;
             scope = scope->getParentScope();
         }

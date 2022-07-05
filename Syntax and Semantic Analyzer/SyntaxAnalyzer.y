@@ -30,7 +30,7 @@ start: program
 
 program: program unit
                         {
-                            setValue(program,popValue(program) + " " + popValue(unit));
+                            setValue(program,popValue(program)+popValue(unit));
                             printRuleAndCode(program,"program unit");
                         }
                 |   unit
@@ -51,6 +51,10 @@ unit:   var_declaration
                             printRuleAndCode(unit,"func_declaration");
                         }
                 |   func_definition
+                        {
+                            setValue(unit,popValue(func_definition));
+                            printRuleAndCode(unit,"func_definition");
+                        }
                 ;
 
 func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
@@ -60,6 +64,14 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                             setValue(func_declaration,popValue(type_specifier)+$2->getName()+"("+")"+";");
                             printRuleAndCode(func_declaration,"type_specifier ID LPAREN RPAREN SEMICOLON");
                         }
+                ;
+
+func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFuncDef($1, $2);} compound_statement
+                        {
+                            setValue(func_definition,popValue(type_specifier)+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
+				            printRuleAndCode(func_definition,"type_specifier ID LPAREN parameter_list RPAREN compound_statement");
+                        }
+                |   type_specifier ID LPAREN RPAREN {addFuncDef($1, $2);} compound_statement
                 ;
 
 parameter_list: parameter_list COMMA type_specifier ID
@@ -76,6 +88,20 @@ parameter_list: parameter_list COMMA type_specifier ID
 					        printRuleAndCode(parameter_list,"type_specifier ID");
                         }
                 |   type_specifier
+                ;
+
+compound_statement: LCURL {createScope();} statements RCURL
+                        {
+                            setValue(compound_statement,"{"+popValue(statements)+"}");
+                            printRuleAndCode(compound_statement,"LCURL statements RCURL");
+                            exitScope();
+                        }
+                |   LCURL {createScope();} RCURL
+                        {
+                            setValue(compound_statement,"{}");
+                            printRuleAndCode(compound_statement,"LCURL RCURL");
+                            exitScope();
+                        }
                 ;
 
 var_declaration: type_specifier declaration_list SEMICOLON
@@ -119,15 +145,75 @@ declaration_list : declaration_list COMMA ID
                             printRuleAndCode(declaration_list,"ID");
                         }
                 |   ID LTHIRD CONST_INT RTHIRD
-                ;    
+                ;   
+
+statements: statement
+                        {
+                            setValue(statements,popValue(statement));
+				            printRuleAndCode(statements,"statement");
+                        }
+                |   statements statement
+                ;
+
+statement: var_declaration 
+                        {
+                            setValue(statement,popValue(var_declaration));
+				            printRuleAndCode(statement,"var_declaration");
+                        }
+                |   expression_statement
+                        {
+                            setValue(statement,popValue(expression_statement));
+				            printRuleAndCode(statement,"expression_statement");
+                        }
+                |   compound_statement
+                        {
+                            setValue(statement,popValue(compound_statement));
+				            printRuleAndCode(statement,"compound_statement");
+                        }
+                |   FOR LPAREN expression_statement expression_statement expression RPAREN statement
+                |   IF LPAREN expression RPAREN statement
+                |   IF LPAREN expression RPAREN statement ELSE statement
+                |   WHILE LPAREN expression RPAREN statement
+                |   PRINTLN LPAREN ID RPAREN SEMICOLON
+                |   RETURN expression SEMICOLON
+                        {
+                            checkFuncReturnType($2);
+                            setValue(statement,"return"+popValue(expression)+";");
+				            printRuleAndCode(statement,"RETURN expression SEMICOLON");
+                        }
+                ;
 
 variable: ID            
                         {
-                            $$ = getSymbolInfoOfType($1);
+                            $$ = getVariable($1);
                             setValue(variable,$1->getName());
 				            printRuleAndCode(variable,"ID");
                         }
                 |   ID LTHIRD expression RTHIRD
+                ;
+
+expression: logic_expression
+                        {
+                            setValue(expression,popValue(logic_expression));
+				            printRuleAndCode(expression,"logic_expression");
+                        }
+                |   variable ASSIGNOP logic_expression
+                ;
+
+logic_expression: rel_expression
+                        {
+                            setValue(logic_expression,popValue(rel_expression));
+				            printRuleAndCode(logic_expression,"rel_expression");
+                        }
+                |   rel_expression LOGICOP rel_expression
+                ;
+
+rel_expression: simple_expression
+                        {
+                            setValue(rel_expression,popValue(simple_expression));
+				            printRuleAndCode(rel_expression,"simple_expression");
+                        }
+                |   simple_expression RELOP simple_expression
                 ;
 
 simple_expression: term
@@ -136,6 +222,10 @@ simple_expression: term
 					        printRuleAndCode(simple_expression,"term");
                         }
                 |   simple_expression ADDOP term
+                        {
+                            setValue(simple_expression,popValue(simple_expression)+$2->getName()+popValue(term));
+					        printRuleAndCode(simple_expression,"simple_expression ADDOP term");
+                        }
                 ;
 
 term:	unary_expression
