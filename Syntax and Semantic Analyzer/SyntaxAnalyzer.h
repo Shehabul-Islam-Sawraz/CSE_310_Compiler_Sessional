@@ -298,6 +298,13 @@ SymbolInfo* getVariable(SymbolInfo* sym){
 	return nullptr;
 }
 
+void checkExistance(SymbolInfo* sym){
+	SymbolInfo* temp = symbolTable->lookUp(sym->getName(),(int)(hashValue(sym->getName())%NoOfBuckets));
+	if(temp==nullptr){
+		printError("Undeclared variable "+sym->getName());
+	}
+}
+
 SymbolInfo* getArrVar(SymbolInfo* sym, SymbolInfo* index){
 	SymbolInfo* temp = symbolTable->lookUp(sym->getName(),(int)(hashValue(sym->getName())%NoOfBuckets));
 	if(temp==nullptr){
@@ -328,6 +335,41 @@ SymbolInfo* getConstValue(SymbolInfo* sym, string varType){
 		sym->intValue() = atoi(sym->getName().data());
 	}
 	return sym;
+}
+
+SymbolInfo* getUnaryOpVal(SymbolInfo* op, SymbolInfo* sym){
+	if (sym->getVarType() == VOID_TYPE) {
+		printError("Invalid Operand for Unary Operation.Operand can't be void");
+		return nullptr;
+	}
+	string uniop = op->getName();
+	SymbolInfo* opVal = new SymbolInfo("","");
+	opVal = getConstValue(opVal, sym->getVarType());
+	if(sym->getVarType()==FLOAT_TYPE){
+		opVal->fltValue() = (uniop == "+") ? (sym->fltValue()) : -(sym->fltValue());
+	}
+	else if(sym->getVarType()==INT_TYPE){
+		opVal->intValue() = (uniop == "+") ? (sym->intValue()) : -(sym->intValue());
+	}
+	return opVal;
+}
+
+SymbolInfo* getNotOpVal(SymbolInfo* sym){
+	if(sym->getVarType()==VOID_TYPE){
+		printError("Invalid Operand for Logical Not Operation");
+		return nullptr;
+	}
+	SymbolInfo* opVal = new SymbolInfo("","");
+	opVal = getConstValue(opVal,INT_TYPE);
+	int ans = 0;
+	if(sym->getVarType()==INT_TYPE){
+		ans = sym->intValue();
+	}
+	else if(sym->getVarType()==FLOAT_TYPE){
+		ans = (int)sym->fltValue();
+	}
+	opVal->intValue() = !ans;
+	return opVal;
 }
 
 SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){

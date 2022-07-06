@@ -226,6 +226,7 @@ statement: var_declaration
                         }
                 |   PRINTLN LPAREN ID RPAREN SEMICOLON
                         {
+                            checkExistance($3);
                             setValue(statement,"("+$3->getName()+")"+";");
 				            printRuleAndCode(statement,"PRINTLN LPAREN ID RPAREN SEMICOLON");
                         }
@@ -333,7 +334,17 @@ term:	unary_expression
                 ;
 
 unary_expression: ADDOP unary_expression
+                        {
+                            $$ = getUnaryOpVal($1,$2);
+                            setValue(unary_expression,$1->getName()+popValue(unary_expression));
+					        printRuleAndCode(unary_expression,"ADDOP unary_expression");
+                        }
                 |   NOT unary_expression
+                        {
+                            $$ = getNotOpVal($2);
+                            setValue(unary_expression,"!"+popValue(unary_expression));
+					        printRuleAndCode(unary_expression,"NOT unary_expression");
+                        }
                 |   factor
                         {
                             setValue(unary_expression,popValue(factor));
