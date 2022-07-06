@@ -358,6 +358,11 @@ factor: variable
 			                printRuleAndCode(factor,"variable");
                         }
                 |   ID LPAREN argument_list RPAREN
+                        {
+                            $$ = getFuncCallValue($1);
+                            setValue(factor,$1->getName()+"("+popValue(argument_list)+")");
+			                printRuleAndCode(factor,"ID LPAREN argument_list RPAREN");
+                        }
                 |   LPAREN expression RPAREN
                         {
                             $$ = $2;
@@ -377,7 +382,17 @@ factor: variable
 			                printRuleAndCode(factor,"CONST_FLOAT");
                         }
                 |   variable INCOP
+                        {
+                            $$ = getINDECOpVal($1,"++");
+                            setValue(factor,popValue(variable)+"++");
+			                printRuleAndCode(factor,"variable INCOP");
+                        }
                 |   variable DECOP
+                        {
+                            $$ = getINDECOpVal($1,"--");
+                            setValue(factor,popValue(variable)+"--");
+			                printRuleAndCode(factor,"variable DECOP");
+                        }
                 ;
 
 argument_list: arguments

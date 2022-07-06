@@ -238,7 +238,8 @@ void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
 		}
 		vector<string> v = temp->getparamType();
 		bool iserr = false;
-		for(int i=0;i,paramType.size()){
+		int l = paramType.size();
+		for(int i=0;i<l;i++){
 			if(v[i].compare(paramType[i])!=0){
 				printError((i+1)+" th argument mismatch in function "+temp->getName());
 				iserr = true;
@@ -331,6 +332,22 @@ SymbolInfo* getConstValue(SymbolInfo* sym, string varType){
 		sym->floatValues.push_back(0);
 		sym->fltValue() = static_cast<float>(atof(sym->getName().data()));
 	} else if (varType == INT_TYPE) {
+		sym->intValues.push_back(0);
+		sym->intValue() = atoi(sym->getName().data());
+	}
+	return sym;
+}
+
+SymbolInfo* getConstValue(string val, string varType){
+	SymbolInfo* sym = new SymbolInfo(val,"CONST");
+	sym->setDecType(VARIABLE);
+	sym->setVarType(varType);
+	if (varType == FLOAT_TYPE) {
+		sym->setType("CONST_FLOAT");
+		sym->floatValues.push_back(0);
+		sym->fltValue() = static_cast<float>(atof(sym->getName().data()));
+	} else if (varType == INT_TYPE) {
+		sym->setType("CONST_INT");
 		sym->intValues.push_back(0);
 		sym->intValue() = atoi(sym->getName().data());
 	}
@@ -660,6 +677,59 @@ SymbolInfo* getLogicOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
 	return opVal;
 }
 
+SymbolInfo* getFuncCallValue(SymbolInfo* sym){
+	SymbolInfo* temp = symbolTable->lookUp(sym->getName(),(int)(hashValue(sym->getName())%NoOfBuckets));
+	SymbolInfo* ans = nullptr;
+	if(temp == nullptr){
+		printError("Undeclared function "+sym->getName());
+	}
+	else if(!temp->isFunction()){
+		printError(sym->getName()+" is not a function");
+	}
+	else if(!temp->getIsFuncDeclared()){
+		printError(sym->getName()+" does not have a body");
+	}
+	else{
+		if(temp->getparamType().size()!=paramType.size()){
+			printError("Total number of arguments mismatch in function "+temp->getName());
+		}
+		else{
+			vector<string> v = temp->getparamType();
+			int l = paramType.size();
+			for(int i=0;i<l;i++){
+				if(v[i].compare(paramType[i])!=0){
+					printError((i+1)+" th argument mismatch in function "+temp->getName());
+				}
+			}
+		}
+		ans = getConstValue("", temp->getFuncRetType());
+	}
+	clearFunctionParam();
+	return ans;
+}
+
+SymbolInfo* getINDECOpVal(SymbolInfo* sym, string op){
+	SymbolInfo* opVal = new SymbolInfo("","");
+	opVal = getConstValue(opVal, sym->getVarType());
+	if(op=="++"){
+		if (sym->getVarType() == INT_TYPE) {
+			opVal->intValue() = ++sym->intValue();
+		} 
+		else if (sym->getVarType() == FLOAT_TYPE) {
+			opVal->fltValue() = ++sym->fltValue();
+		}
+	}
+	else if(op=="--"){
+		if (sym->getVarType() == INT_TYPE) {
+			opVal->intValue() = --sym->intValue();
+		} 
+		else if (sym->getVarType() == FLOAT_TYPE) {
+			opVal->fltValue() = --sym->fltValue();
+		}
+	}
+	return opVal;
+}
+
 void checkFuncReturnType(SymbolInfo *sym) {
 	if (currentFunc != nullptr && currentFunc->getFuncRetType() != sym->getVarType()) {
 		printError(currentFunc->getName() + ": function return type does not match with return expression type");
@@ -673,7 +743,7 @@ void createScope(){
 	}
 	clearFunctionParam();
 }
-`
+
 void exitScope(){
 	currentFunc = nullptr;
 	symbolTable->printAllScope(logout);

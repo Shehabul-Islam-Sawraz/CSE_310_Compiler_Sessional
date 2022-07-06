@@ -13,7 +13,7 @@ private:
     string name, type;
     string decType; // Stores which one is declared!! FUNCTION, VARIABLE, ARRAY
     string varType; // Stores variable type!! INTEGER, FLOAT, DOUBLE, VOID
-    bool isFuncDeclared = false; // Is afunction with some name already defined
+    bool isFuncDeclared = false; // Is a function have a body or not
     string funcRetType; // Stores return type of function
     vector<string> paramType; // Stores the types of the parameters
     size_t arrSize; // Stores size of the array
