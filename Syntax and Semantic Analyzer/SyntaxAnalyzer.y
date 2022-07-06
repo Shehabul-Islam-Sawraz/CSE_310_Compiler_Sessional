@@ -270,6 +270,11 @@ term:	unary_expression
 					        printRuleAndCode(term,"unary_expression");
                         }
                 |   term MULOP unary_expression
+                        {
+                            $$ = getMulOpVal($1,$2,$3);
+                            setValue(term,popValue(term)+$2->getName()+popValue(unary_expression));
+					        printRuleAndCode(term,"term MULOP unary_expression");
+                        }
                 ;
 
 unary_expression: ADDOP unary_expression

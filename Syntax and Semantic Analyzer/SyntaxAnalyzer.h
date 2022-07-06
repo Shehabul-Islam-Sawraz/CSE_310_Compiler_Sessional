@@ -9,6 +9,8 @@
 #define FLOAT_TYPE "FLOAT"
 #define VOID_TYPE "VOID"
 #define CHAR_TYPE "CHAR"
+#define INFINITY_INT  numeric_limits<int>::max();
+#define INFINITY_FLOAT numeric_limits<float>::infinity()
 
 FILE *logout, *errorout, *parserout;
 extern int line_count;
@@ -336,10 +338,10 @@ SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
 	string addop = op->getName();
 	SymbolInfo* opVal = new SymbolInfo("","");
 	if(left->getVarType()==FLOAT_TYPE || right->getVarType()==FLOAT_TYPE){
-		getConstValue(opVal,FLOAT_TYPE);
+		opval = getConstValue(opVal,FLOAT_TYPE);
 	}
 	else{
-		getConstValue(opVal,INT_TYPE);
+		opval = getConstValue(opVal,INT_TYPE);
 	}
 	if(addop=="+"){
 		if(left->getVarType()==FLOAT_TYPE){
@@ -384,6 +386,93 @@ SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
 		}
 	}
 	return opVal;
+}
+
+SymbolInfo* getMulOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
+	if (left->getVarType() == VOID_TYPE || right->getVarType() == VOID_TYPE) {
+		printError("Operand of void type.");
+		return nullptr;
+	}
+	string mulop = op->getName();
+	if(mulop=="%" && (left->getVarType()==FLOAT_TYPE || right->getVarType()==FLOAT_TYPE)){
+		printError("Float operand for mod operator");
+		return nullptr;
+	}
+	SymbolInfo* opVal = new SymbolInfo("","");
+	if(left->getVarType()==FLOAT_TYPE || right->getVarType()==FLOAT_TYPE){
+		opval = getConstValue(opVal,FLOAT_TYPE);
+	}
+	else{
+		opval = getConstValue(opVal,INT_TYPE);
+	}
+	if(mulop=="%"){
+		if (left->getVarType()==INT_TYPE && right->getVarType()==INT_TYPE && right->intValue()){
+			opVal->intValue() = left->intValue() % right->intValue();
+		}
+	}
+	else if(mulop=="*"){
+		if(left->getVarType()==FLOAT_TYPE){
+			if(right->getVarType()==INT_TYPE){
+				opVal->fltValue() = left->fltValue() * right->intValue();
+			}
+			else{
+				opVal->fltValue() = left->fltValue() * right->fltValue();
+			}
+		}
+		else if(right->getVarType()==FLOAT_TYPE){
+			if (left->getVarType()==INT_TYPE) {
+				opVal->fltValue() = left->intValue() * right->fltValue();
+			} else {
+				opVal->fltValue() = left->fltValue() * right->fltValue();
+			}
+		}
+		else if (right->getVarType()==INT_TYPE && left->getVarType()==INT_TYPE){
+			opVal->setVarType(INT_TYPE);
+			opVal->intValue() = left->intValue() * right->intValue();
+		}
+	}
+	else if(mulop=="/"){
+		if(left->getVarType()==FLOAT_TYPE){
+			if(right->getVarType()==INT_TYPE){
+				if (right->intValue() != 0) {
+					opVal->fltValue() = left->fltValue() / (right->intValue()*1.0);
+				} else {
+					opVal->fltValue() = INFINITY_FLOAT;
+				}
+			}
+			else if(right->getVarType()==FLOAT_TYPE){
+				if (right->fltValue() != 0) {
+					opVal->fltValue() = left->fltValue() / right->fltValue();
+				} else {
+					opVal->fltValue() = INFINITY_FLOAT;
+				}
+			}
+		}
+		else if(right->getVarType()==FLOAT_TYPE){
+			if(left->getVarType()==INT_TYPE){
+				if (right->fltValue() != 0) {
+					opVal->fltValue() = (left->intValue()*1.0) / right->fltValue();
+				} else {
+					opVal->fltValue() = INFINITY_FLOAT;
+				}
+			}
+			else if(left->getVarType()==FLOAT_TYPE){
+				if (right->fltValue() != 0) {
+					opVal->fltValue() = (left->fltValue()) / right->fltValue();
+				} else {
+					opVal->fltValue() = INFINITY_FLOAT;
+				}
+			}
+		}
+		else if(right->getVarType()==INT_TYPE && left->getVarType()==INT_TYPE){
+			if (right->intValue() != 0) {
+				opVal->intValue() = left->intValue() / right->intValue();
+			} else {
+				opVal->fltValue() = INFINITY_INT;
+			}
+		}
+	}
+	return opval;
 }
 
 SymbolInfo* getAssignExpVal(SymbolInfo* left, SymbolInfo* right){ // Handles assignment expressions e.g. x=2
