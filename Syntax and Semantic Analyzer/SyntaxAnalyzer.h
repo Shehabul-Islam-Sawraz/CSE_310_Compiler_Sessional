@@ -338,10 +338,10 @@ SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
 	string addop = op->getName();
 	SymbolInfo* opVal = new SymbolInfo("","");
 	if(left->getVarType()==FLOAT_TYPE || right->getVarType()==FLOAT_TYPE){
-		opval = getConstValue(opVal,FLOAT_TYPE);
+		opVal = getConstValue(opVal,FLOAT_TYPE);
 	}
 	else{
-		opval = getConstValue(opVal,INT_TYPE);
+		opVal = getConstValue(opVal,INT_TYPE);
 	}
 	if(addop=="+"){
 		if(left->getVarType()==FLOAT_TYPE){
@@ -394,20 +394,23 @@ SymbolInfo* getMulOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
 		return nullptr;
 	}
 	string mulop = op->getName();
-	if(mulop=="%" && (left->getVarType()==FLOAT_TYPE || right->getVarType()==FLOAT_TYPE)){
-		printError("Float operand for mod operator");
+	if(mulop=="%" && (left->getVarType()!=INT_TYPE || right->getVarType()!=INT_TYPE)){
+		printError("Non-Integer operand on modulus operator");
 		return nullptr;
 	}
 	SymbolInfo* opVal = new SymbolInfo("","");
 	if(left->getVarType()==FLOAT_TYPE || right->getVarType()==FLOAT_TYPE){
-		opval = getConstValue(opVal,FLOAT_TYPE);
+		opVal = getConstValue(opVal,FLOAT_TYPE);
 	}
 	else{
-		opval = getConstValue(opVal,INT_TYPE);
+		opVal = getConstValue(opVal,INT_TYPE);
 	}
 	if(mulop=="%"){
 		if (left->getVarType()==INT_TYPE && right->getVarType()==INT_TYPE && right->intValue()){
 			opVal->intValue() = left->intValue() % right->intValue();
+		}
+		else if (left->getVarType()==INT_TYPE && right->getVarType()==INT_TYPE && right->intValue()==0){
+			printError("Modulus by Zero");
 		}
 	}
 	else if(mulop=="*"){
@@ -472,7 +475,7 @@ SymbolInfo* getMulOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
 			}
 		}
 	}
-	return opval;
+	return opVal;
 }
 
 SymbolInfo* getAssignExpVal(SymbolInfo* left, SymbolInfo* right){ // Handles assignment expressions e.g. x=2
@@ -495,6 +498,124 @@ SymbolInfo* getAssignExpVal(SymbolInfo* left, SymbolInfo* right){ // Handles ass
 		}
 	}
 	return left;
+}
+
+SymbolInfo* getRelOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
+	if(left->getVarType()==VOID_TYPE || right->getVarType()==VOID_TYPE){
+		printError("Can't compare with void type expressions");
+		return nullptr;
+	}
+	string relop = op->getName();
+	SymbolInfo* opVal = new SymbolInfo("","");
+	opVal->setVarType(INT_TYPE);
+	int lIVal = 0, rIVal=0;
+	float lFVal = 0.0, rFVal = 0.0;
+	int &result = opVal->intValue();
+	int8_t cmp = 0x00; // 0->int,F->float,0F->int-float,FF->float-float comparison
+	if(left->getVarType()==INT_TYPE){
+		lIVal = left->intValue();
+		cmp &= 0x0F;
+	}
+	else{
+		lFVal = left->fltValue();
+		cmp |= 0xF0;
+	}
+	if (right->getVarType()==INT_TYPE) {
+		rIVal = right->intValue();
+		cmp &= 0xF0;
+	} 
+	else {
+		rFVal = right->fltValue();
+		cmp |= 0x0F;
+	}
+
+	if (cmp == 0x00) {
+		result = relop == "==" ? lIVal == rIVal :
+		         relop == "!=" ? lIVal != rIVal :
+		         relop == "<=" ? lIVal <= rIVal :
+		         relop == ">=" ? lIVal >= rIVal :
+		         relop == "<" ? lIVal < rIVal :
+		         relop == ">" ? lIVal > rIVal : 0;
+	} 
+	else if (cmp == 0x0F) {
+		result = relop == "==" ? lIVal == rFVal :
+		         relop == "!=" ? lIVal != rFVal :
+		         relop == "<=" ? lIVal <= rFVal :
+		         relop == ">=" ? lIVal >= rFVal :
+		         relop == "<" ? lIVal < rFVal :
+		         relop == ">" ? lIVal > rFVal : 0;
+	} 
+	else if (cmp == 0xF0) {
+		result = relop == "==" ? lFVal == rIVal :
+		         relop == "!=" ? lFVal != rIVal :
+		         relop == "<=" ? lFVal <= rIVal :
+		         relop == ">=" ? lFVal >= rIVal :
+		         relop == "<" ? lFVal < rIVal :
+		         relop == ">" ? lFVal > rIVal : 0;
+	} 
+	else if (cmp == 0xFF) {
+		result = relop == "==" ? lFVal == rFVal :
+		         relop == "!=" ? lFVal != rFVal :
+		         relop == "<=" ? lFVal <= rFVal :
+		         relop == ">=" ? lFVal >= rFVal :
+		         relop == "<" ? lFVal < rFVal :
+		         relop == ">" ? lFVal > rFVal : 0;
+	}
+	if(relop == "==" && left->getVarType()!=right->getVarType()){
+		printWarning("Comparision between two different types");
+	}
+	return opVal;
+}
+
+SymbolInfo* getLogicOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
+	if(left->getVarType()==VOID_TYPE || right->getVarType()==VOID_TYPE){
+		printError("Can't compare with void type expressions");
+		return nullptr;
+	}
+	string logicOp = op->getName();
+	SymbolInfo* opVal = new SymbolInfo("","");
+	opVal->setVarType(INT_TYPE);
+	int lIVal = 0, rIVal=0;
+	float lFVal = 0.0, rFVal = 0.0;
+	int &result = opVal->intValue();
+	int8_t cmp = 0x00; // 0->int,F->float,0F->int-float,FF->float-float comparison
+	if(left->getVarType()==INT_TYPE){
+		lIVal = left->intValue();
+		cmp &= 0x0F;
+	}
+	else{
+		lFVal = left->fltValue();
+		cmp |= 0xF0;
+	}
+	if (right->getVarType()==INT_TYPE) {
+		rIVal = right->intValue();
+		cmp &= 0xF0;
+	} 
+	else {
+		rFVal = right->fltValue();
+		cmp |= 0x0F;
+	}
+
+	if (cmp == 0x00) {
+		result = logicOp == "&&" ? lIVal && rIVal :
+		         logicOp == "||" ? lIVal || rIVal : 0;
+	} 
+	else if (cmp == 0x0F) {
+		result = logicOp == "&&" ? lIVal && rFVal :
+		         logicOp == "||" ? lIVal || rFVal : 0;
+	} 
+	else if (cmp == 0xF0) {
+		result = logicOp == "&&" ? lFVal && rIVal :
+		         logicOp == "||" ? lFVal || rIVal : 0;
+	} 
+	else if (cmp == 0xFF) {
+		result = logicOp == "&&" ? lFVal && rFVal :
+		         logicOp == "||" ? lFVal || rFVal : 0;
+	}
+	if(left->getVarType()!=right->getVarType()){
+		printWarning("Comparision between two different types");
+	}
+	return opVal;
 }
 
 void checkFuncReturnType(SymbolInfo *sym) {

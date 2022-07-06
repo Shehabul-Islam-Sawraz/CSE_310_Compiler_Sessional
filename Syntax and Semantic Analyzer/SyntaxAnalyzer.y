@@ -241,6 +241,13 @@ logic_expression: rel_expression
 				            printRuleAndCode(logic_expression,"rel_expression");
                         }
                 |   rel_expression LOGICOP rel_expression
+                        {
+                            $$ = getLogicOpVal($1,$2,$3);
+                            string r2 = popValue(rel_expression);
+                            string r1 = popValue(rel_expression);
+                            setValue(logic_expression,r1+$2->getName()+r2);
+                            printRuleAndCode(logic_expression,"rel_expression LOGICOP rel_expression");
+                        }
                 ;
 
 rel_expression: simple_expression
@@ -249,6 +256,13 @@ rel_expression: simple_expression
 				            printRuleAndCode(rel_expression,"simple_expression");
                         }
                 |   simple_expression RELOP simple_expression
+                        {
+                            $$ = getRelOpVal($1,$2,$3);
+                            string s2 = popValue(simple_expression);
+					        string s1 = popValue(simple_expression);
+                            pushVal(rel_expression,s1+$2->getName()+s2);
+					        printRuleLog(rel_expression,"simple_expression RELOP simple_expression");
+                        }
                 ;
 
 simple_expression: term
@@ -293,6 +307,11 @@ factor: variable
                         }
                 |   ID LPAREN argument_list RPAREN
                 |   LPAREN expression RPAREN
+                        {
+                            $$ = $2;
+                            setValue(factor,"("+popValue(expression)+")");
+			                printRuleAndCode(factor,"LPAREN expression RPAREN");
+                        }
                 |   CONST_INT
                         {
                             $$ = getConstValue($1,INT_TYPE);
@@ -307,6 +326,20 @@ factor: variable
                         }
                 |   variable INCOP
                 |   variable DECOP
+                ;
+
+arguments: arguments COMMA logic_expression
+                        {
+                            paramType.push_back($3->getVarType());
+                            setValue(arguments,popValue(arguments)+","+popValue(logic_expression));
+						    printRuleAndCode(arguments,"arguments COMMA logic_expression");
+                        }
+                |   logic_expression
+                        {
+                            paramType.push_back($1->getVarType());
+                            setValue(arguments,popValue(logic_expression));
+						    printRuleAndCode(arguments,"logic_expression");
+                        }
                 ;
 %%
 
