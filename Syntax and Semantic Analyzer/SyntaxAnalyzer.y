@@ -58,6 +58,12 @@ unit:   var_declaration
                 ;
 
 func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
+                        {
+                            insertFunc($2, $1);
+                            clearFunctionParam();
+                            setValue(func_declaration,popValue(type_specifier)+$2->getName()+"("+popValue(parameter_list)+")"+";");
+                            printRuleAndCode(func_declaration,"type_specifier ID LPAREN parameter_list RPAREN SEMICOLON");
+                        }
                 |   type_specifier ID LPAREN RPAREN SEMICOLON
                         {
                             insertFunc($2, $1);
@@ -85,6 +91,11 @@ parameter_list: parameter_list COMMA type_specifier ID
 					        printRuleAndCode(parameter_list,"parameter_list COMMA type_specifier ID");
                         }
                 |   parameter_list COMMA type_specifier
+                        {
+                            paramType.push_back(variableType);
+                            setValue(parameter_list,popValue(parameter_list)+","+popValue(type_specifier));
+					        printRuleAndCode(parameter_list,"parameter_list COMMA type_specifier");
+                        }
                 |   type_specifier ID
                         {
                             insertIntoParamType($2);
@@ -92,6 +103,11 @@ parameter_list: parameter_list COMMA type_specifier ID
 					        printRuleAndCode(parameter_list,"type_specifier ID");
                         }
                 |   type_specifier
+                        {
+                            paramType.push_back(variableType);
+                            setValue(parameter_list,popValue(type_specifier));
+					        printRuleAndCode(parameter_list,"type_specifier");
+                        }
                 ;
 
 compound_statement: LCURL {createScope();} statements RCURL
@@ -142,6 +158,11 @@ declaration_list : declaration_list COMMA ID
                             printRuleAndCode(declaration_list,"declaration_list COMMA ID");
                         }
                 |   declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
+                        {
+                            insertArr($3,$5);
+                            setValue(declaration_list,popValue(declaration_list)+","+$3->getName()+"["+$5->getName()+"]");
+				            printRuleAndCode(declaration_list,"declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
+                        }
                 |   ID
                         {
                             insertVar($1);
@@ -184,10 +205,30 @@ statement: var_declaration
 				            printRuleAndCode(statement,"compound_statement");
                         }
                 |   FOR LPAREN expression_statement expression_statement expression RPAREN statement
+                        {
+                            setValue(statement,"for"+"("+popValue(expression_statement)+popValue(expression_statement)+popValue(expression)+")"+popValue(statement));
+				            printRuleAndCode(statement,"FOR LPAREN expression_statement expression_statement expression RPAREN statement");
+                        }
                 |   IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
+                        {
+                            setValue(statement,"if"+"("+popValue(expression)+")"+popValue(statement));
+				            printRuleAndCode(statement,"IF LPAREN expression RPAREN statement");
+                        }
                 |   IF LPAREN expression RPAREN statement ELSE statement
+                        {
+                            setValue(statement,"if"+"("+popValue(expression)+")"+popValue(statement)+"else"+popValue(statement));
+				            printRuleAndCode(statement,"IF LPAREN expression RPAREN statement ELSE statement");
+                        }
                 |   WHILE LPAREN expression RPAREN statement
+                        {
+                            setValue(statement,"while"+"("+popValue(expression)+")"+popValue(statement));
+				            printRuleAndCode(statement,"WHILE LPAREN expression RPAREN statement");
+                        }
                 |   PRINTLN LPAREN ID RPAREN SEMICOLON
+                        {
+                            setValue(statement,"("+$3->getName()+")"+";");
+				            printRuleAndCode(statement,"PRINTLN LPAREN ID RPAREN SEMICOLON");
+                        }
                 |   RETURN expression SEMICOLON
                         {
                             checkFuncReturnType($2);
@@ -326,6 +367,18 @@ factor: variable
                         }
                 |   variable INCOP
                 |   variable DECOP
+                ;
+
+argument_list: arguments
+                        {
+                            setValue(argument_list,popValue(arguments));
+						    printRuleAndCode(argument_list,"arguments");
+                        }
+                |       
+                        {
+                            setValue(argument_list,"");
+						    printRuleAndCode(argument_list,"");
+                        }
                 ;
 
 arguments: arguments COMMA logic_expression
