@@ -13,15 +13,16 @@ private:
     string name, type;
     string decType; // Stores which one is declared!! FUNCTION, VARIABLE, ARRAY
     string varType; // Stores variable type!! INTEGER, FLOAT, DOUBLE, VOID
-    bool isFuncDeclared = false;
+    bool isFuncDeclared = false; // Is afunction with some name already defined
     string funcRetType; // Stores return type of function
-    vector<string> paramList;
-    size_t arrSize;
-    int defInt = 0;
-    float defFloat = 0.0;
+    vector<string> paramType; // Stores the types of the parameters
+    size_t arrSize; // Stores size of the array
+    size_t arrIndex; // Stores which index we are accessing
+    int defInt = 0; // Set default value to 0 to a INT_TYPE variable until some value is assigned into it
+    float defFloat = 0.0; // Set default value to 0.0 to a FLOAT_TYPE variable until some value is assigned into it
 public:
-    vector<int> intValues;
-    vector<float> floatValues;
+    vector<int> intValues; // Stores array values if array is INT_TYPE. Default value is set to 0
+    vector<float> floatValues; // Stores array values if array is FLOAT_TYPE. Default value is set to 0.0
     SymbolInfo(string name,string type){
         this->name = name;
         this->type = type;
@@ -49,12 +50,12 @@ public:
         return this->type;
     }
 
-    void setParamList(vector<string> paramList){
-        this->paramList = paramList;
+    void setparamType(vector<string> paramType){
+        this->paramType = paramType;
     }
 
-    vector<string> getParamList(){
-        return this->paramList;
+    vector<string> getparamType(){
+        return this->paramType;
     }
 
     void setDecType(string type){
@@ -67,10 +68,10 @@ public:
 
     void setVarType(string type){
         this->varType = type;
-        if (varType == INT_TYPE){
+        if (type == INT_TYPE){
             intValues.push_back(0);
         }   
-		else if (varType == FLOAT_TYPE){
+		else if (type == FLOAT_TYPE){
             floatValues.push_back(0);
         }
     }
@@ -100,7 +101,7 @@ public:
         this->isFuncDeclared = isFuncDeclared;
     }
 
-    size_t getArrSize() const {
+    size_t getArrSize() {
 		return arrSize;
 	}
 
@@ -109,6 +110,17 @@ public:
             return;
         }
 		this->arrSize = arrSize;
+	}
+
+    size_t getArrIndex() const {
+		return isArray() ? arrIndex : 0;
+	}
+
+	void setArrIndex(size_t arrIndex) {
+		if (decType!=ARRAY){
+            return;
+        }
+		this->arrIndex = arrIndex;
 	}
 
     SymbolInfo* getPrevious(){
@@ -139,7 +151,7 @@ public:
         return isFunction() && getFuncRetType()==VOID_TYPE;
     }
 
-    int setVarValue(int val) {
+    int setVarValue(int val) { // As default value was set to 0 now we change the value with the defined value
 		if (intValues.empty()){
             intValues.push_back(val);
         }
@@ -159,7 +171,7 @@ public:
 		return floatValues[0];
 	}
 
-    int &intValue(){
+    int &intValue(){ // Setting default value 0 to a variable initially 
         if(decType==VARIABLE && varType==INT_TYPE){
             if(!intValues.size()){
                 intValues.push_back(0);

@@ -72,18 +72,22 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFuncDef($1, 
 				            printRuleAndCode(func_definition,"type_specifier ID LPAREN parameter_list RPAREN compound_statement");
                         }
                 |   type_specifier ID LPAREN RPAREN {addFuncDef($1, $2);} compound_statement
+                        {
+                            setValue(func_definition,popValue(type_specifier)+$2->getName()+"("+")"+popValue(compound_statement));
+				            printRuleAndCode(func_definition,"type_specifier ID LPAREN RPAREN compound_statement");
+                        }
                 ;
 
 parameter_list: parameter_list COMMA type_specifier ID
                         {
-                            insertIntoParamList($4);
+                            insertIntoParamType($4);
                             setValue(parameter_list,popValue(parameter_list)+","+popValue(type_specifier)+$4->getName());
 					        printRuleAndCode(parameter_list,"parameter_list COMMA type_specifier ID");
                         }
                 |   parameter_list COMMA type_specifier
                 |   type_specifier ID
                         {
-                            insertIntoParamList($2);
+                            insertIntoParamType($2);
                             setValue(parameter_list,popValue(type_specifier)+$2->getName());
 					        printRuleAndCode(parameter_list,"type_specifier ID");
                         }
@@ -145,6 +149,11 @@ declaration_list : declaration_list COMMA ID
                             printRuleAndCode(declaration_list,"ID");
                         }
                 |   ID LTHIRD CONST_INT RTHIRD
+                        {
+                            insertArr($1, $3);
+                            setValue(declaration_list,$1->getName()+"["+$3->getName()+"]");
+				            printRuleAndCode(declaration_list,"ID LTHIRD CONST_INT RTHIRD");
+                        }
                 ;   
 
 statements: statement
@@ -206,6 +215,11 @@ variable: ID
 				            printRuleAndCode(variable,"ID");
                         }
                 |   ID LTHIRD expression RTHIRD
+                        {
+                            $$ = getArrVar($1,$3);
+                            setValue(variable,$1->getName()+"["+popValue(expression)+"]");
+				            printRuleAndCode(variable,"ID LTHIRD expression RTHIRD");
+                        }
                 ;
 
 expression: logic_expression

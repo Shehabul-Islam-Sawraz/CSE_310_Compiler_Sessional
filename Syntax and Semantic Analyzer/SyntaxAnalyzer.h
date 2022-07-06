@@ -20,7 +20,7 @@ size_t syntax_error_count = 0;
 size_t warning_count = 0;
 
 size_t noOfParam = 0
-vector<string> paramList;
+vector<string> paramType;
 vector<SymbolInfo> parameters;
 SymbolInfo* currentFunc = nullptr;
 
@@ -121,7 +121,7 @@ void yyerror(const char *s) {
 }
 
 void clearFunctionParam(){
-	paramList.clear();
+	paramType.clear();
 	parameters.clear();
 	noOfParam = 0;
 }
@@ -188,7 +188,7 @@ void insertFunc(SymbolInfo* func, SymbolInfo* retType){
 		clearFunctionParam();
 		return;
 	}
-	if (noOfParam && find(paramList.begin(), paramList.end(), VOID_TYPE) != paramList.end()) {
+	if (noOfParam && find(paramType.begin(), paramType.end(), VOID_TYPE) != paramType.end()) {
 		printErrorLog("Parameters can't be of void type in function "+func->getName());
 		return;
 	}
@@ -197,13 +197,24 @@ void insertFunc(SymbolInfo* func, SymbolInfo* retType){
 	func->setVarType(retType->getName());
 	SymbolInfo* temp = insertIntoSymbolTable(func);
 	temp->setFuncRetType(retType->getName());
-	temp->setParamList(paramList);
+	temp->setparamType(paramType);
+}
+
+void insertArr(SymbolInfo *sym, SymbolInfo *index) {
+	SymbolInfo *arr = insertVar(sym);
+	arr->setDecType(ARRAY);
+	arr->setArrSize(static_cast<size_t>(atoi(index->getName().data()))); // Set the size of the array as defined size
+	int l = arr->getArrSize();
+	for(int i=0;i<l;i++){
+		arr->intValues.push_back(0);
+		arr->floatValues.push_back(0);
+	}
 }
 
 void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
 	SymbolInfo* temp = symbolTable->lookUp(func->getName(),(int)(hashValue(func->getName())%NoOfBuckets));
 	// to prevent f(int x,float,int y){} type defn but f(void){} allowed
-	if (!(paramList.size() == 1 && argsType[0] == VOID_TYPE) && paramList.size() != noOfParam) {
+	if (!(paramType.size() == 1 && paramType[0] == VOID_TYPE) && paramType.size() != noOfParam) {
 		printError("Unnamed prototype parameter not allowed in definition of function " + funcVal->getName());
 	}
 	else if(temp!=nullptr){
@@ -219,14 +230,14 @@ void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
 			printError("Return type mismatch with function declaration in function "+temp->getName());
 			return;
 		}
-		else if(temp->getParamList().size()!=paramList.size()){
+		else if(temp->getparamType().size()!=paramType.size()){
 			printError("Total number of arguments mismatch with declaration in function "+temp->getName());
 			return;
 		}
-		vector<string> v = temp->getParamList();
+		vector<string> v = temp->getparamType();
 		bool iserr = false;
-		for(int i=0;i,paramList.size()){
-			if(v[i].compare(paramList[i])!=0){
+		for(int i=0;i,paramType.size()){
+			if(v[i].compare(paramType[i])!=0){
 				printError((i+1)+" th argument mismatch in function "+temp->getName());
 				iserr = true;
 			}
@@ -244,7 +255,7 @@ void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
 	}
 }
 
-void insertIntoParamList(SymbolInfo* var){
+void insertIntoParamType(SymbolInfo* var){
 	int l = parameters.size();
 	string str = var->getName();
 	for(int i=0;i<l;i++){
@@ -253,7 +264,7 @@ void insertIntoParamList(SymbolInfo* var){
 			break;
 		}
 	}
-	paramList.push_back(variableType);
+	paramType.push_back(variableType);
 	noOfParam++;
 	//var->setDecType(VARIABLE);
 	//var->setVarType(variableType);
@@ -268,11 +279,11 @@ SymbolInfo* getVariable(SymbolInfo* sym){
 	if(temp==nullptr){
 		printError("Undeclared variable "+sym->getName());
 	}
-	else if(!sym->isVariable()){
-		if(sym->isArray()){
+	else if(!temp->isVariable()){
+		if(temp->isArray()){
 			printError("Type mismatch, "+sym->getName()+" is an array");
 		}
-		else if(sym->isFunction()){
+		else if(temp->isFunction()){
 			printError("Type mismatch, "+sym->getName()+" is an function");
 		}
 		else{
@@ -285,15 +296,34 @@ SymbolInfo* getVariable(SymbolInfo* sym){
 	return nullptr;
 }
 
+SymbolInfo* getArrVar(SymbolInfo* sym, SymbolInfo* index){
+	SymbolInfo* temp = symbolTable->lookUp(sym->getName(),(int)(hashValue(sym->getName())%NoOfBuckets));
+	if(temp==nullptr){
+		printError("Undeclared variable "+sym->getName());
+	}
+	else{
+		if(!temp->isArray()){
+			printError(sym->getName()+" is not an array");
+		}
+		else if(index->getVarType()!=INT_TYPE){
+			printError("Expression inside third brackets not an integer");
+		}
+		else{
+			temp->setArrIndex(static_cast<size_t>(index->intValue())); // Setting the index to the index value that we are trying to access
+		}
+	}
+	return temp;
+}
+
 SymbolInfo* getConstValue(SymbolInfo* sym, string varType){
 	sym->setDecType(VARIABLE);
 	sym->setVarType(varType);
 	if (varType == FLOAT_TYPE) {
 		sym->floatValues.push_back(0);
-		sym->fltValue() = static_cast<float>(atof(constVal->getName().data()));
+		sym->fltValue() = static_cast<float>(atof(sym->getName().data()));
 	} else if (varType == INT_TYPE) {
 		sym->intValues.push_back(0);
-		sym->intValue() = atoi(constVal->getName().data());
+		sym->intValue() = atoi(sym->getName().data());
 	}
 	return sym;
 }
@@ -312,59 +342,51 @@ SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
 		getConstValue(opVal,INT_TYPE);
 	}
 	if(addop=="+"){
-		if(left->isVariable()){
-			if(right->isVariable()){
-				if(left->getVarType()==FLOAT_TYPE){
-					if(right->getVarType()==INT_TYPE){
-						opVal->fltValue() = left->fltValue() + right->intValue();
-					}
-					else{
-						opVal->fltValue() = left->fltValue() + right->fltValue();
-					}
-				}
-				else if(right->getVarType()==FLOAT_TYPE){
-					if (left->getVarType()==INT_TYPE) {
-						opVal->fltValue() = left->intValue() + right->fltValue();
-					} else {
-						opVal->fltValue() = left->fltValue() + right->fltValue();
-					}
-				}
-				else if (right->getVarType()==INT_TYPE && left->getVarType()==INT_TYPE){
-					opVal->setVarType(INT_TYPE);
-					opVal->intValue() = left->intValue()+right->intValue();
-				}
+		if(left->getVarType()==FLOAT_TYPE){
+			if(right->getVarType()==INT_TYPE){
+				opVal->fltValue() = left->fltValue() + right->intValue();
 			}
+			else{
+				opVal->fltValue() = left->fltValue() + right->fltValue();
+			}
+		}
+		else if(right->getVarType()==FLOAT_TYPE){
+			if (left->getVarType()==INT_TYPE) {
+				opVal->fltValue() = left->intValue() + right->fltValue();
+			} else {
+				opVal->fltValue() = left->fltValue() + right->fltValue();
+			}
+		}
+		else if (right->getVarType()==INT_TYPE && left->getVarType()==INT_TYPE){
+			opVal->setVarType(INT_TYPE);
+			opVal->intValue() = left->intValue()+right->intValue();
 		}
 	}
 	else if(addop=="-"){
-		if(left->isVariable()){
-			if(right->isVariable()){
-				if(left->getVarType()==FLOAT_TYPE){
-					if(right->getVarType()==INT_TYPE){
-						opVal->fltValue() = left->fltValue() - right->intValue();
-					}
-					else{
-						opVal->fltValue() = left->fltValue() - right->fltValue();
-					}
-				}
-				else if(right->getVarType()==FLOAT_TYPE){
-					if (left->getVarType()==INT_TYPE) {
-						opVal->fltValue() = left->intValue() - right->fltValue();
-					} else {
-						opVal->fltValue() = left->fltValue() - right->fltValue();
-					}
-				}
-				else if (right->getVarType()==INT_TYPE && left->getVarType()==INT_TYPE){
-					opVal->setVarType(INT_TYPE);
-					opVal->intValue() = left->intValue() - right->intValue();
-				}
+		if(left->getVarType()==FLOAT_TYPE){
+			if(right->getVarType()==INT_TYPE){
+				opVal->fltValue() = left->fltValue() - right->intValue();
 			}
+			else{
+				opVal->fltValue() = left->fltValue() - right->fltValue();
+			}
+		}
+		else if(right->getVarType()==FLOAT_TYPE){
+			if (left->getVarType()==INT_TYPE) {
+				opVal->fltValue() = left->intValue() - right->fltValue();
+			} else {
+				opVal->fltValue() = left->fltValue() - right->fltValue();
+			}
+		}
+		else if (right->getVarType()==INT_TYPE && left->getVarType()==INT_TYPE){
+			opVal->setVarType(INT_TYPE);
+			opVal->intValue() = left->intValue() - right->intValue();
 		}
 	}
 	return opVal;
 }
 
-SymbolInfo* getAssignExpVal(SymbolInfo* left, SymbolInfo* right){
+SymbolInfo* getAssignExpVal(SymbolInfo* left, SymbolInfo* right){ // Handles assignment expressions e.g. x=2
 	if(left->getVarType()==VOID_TYPE || right->getVarType()==VOID_TYPE){
 		printError("Assign Operation on void type");
 		return nullptr;
