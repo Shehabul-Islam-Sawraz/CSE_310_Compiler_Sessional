@@ -201,8 +201,6 @@ SEMICOLON [;]
 {ANYTHING} {printErrorLog("Unrecognized Character");}
 
 <<EOF>> {
-    line_count--;
-    fprintf(logout,"\nTotal Lines: %d\nTotal Errors: %d\n",line_count, error_count);
     return 0;
 }
 %%

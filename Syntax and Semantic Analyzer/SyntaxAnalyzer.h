@@ -1,14 +1,6 @@
 #include "SymbolTable.h"
 #include<stack>
 
-#define NoOfBuckets 7
-#define ARRAY "ARR"
-#define VARIABLE "VAR"
-#define FUNCTION "FUNC"
-#define INT_TYPE "INT"
-#define FLOAT_TYPE "FLOAT"
-#define VOID_TYPE "VOID"
-#define CHAR_TYPE "CHAR"
 #define INFINITY_INT  numeric_limits<int>::max();
 #define INFINITY_FLOAT numeric_limits<float>::infinity()
 
@@ -21,7 +13,7 @@ string variableType;
 size_t syntax_error_count = 0;
 size_t warning_count = 0;
 
-size_t noOfParam = 0
+size_t noOfParam = 0;
 vector<string> paramType;
 vector<SymbolInfo> parameters;
 SymbolInfo* currentFunc = nullptr;
@@ -104,7 +96,7 @@ public:
 		return nonterminals[nonterminal].top();
 	}
 	string popValue(NONTERMINAL_TYPE nonterminal){
-		if(nonTerminalBuf[nonterminal].empty()){
+		if(nonterminals[nonterminal].empty()){
 			return "";
 		}
 		string str = nonterminals[nonterminal].top();
@@ -119,7 +111,8 @@ public:
 NonTerminalHandler nonTerminalHandler;
 
 void yyerror(const char *s) {
-	cout << "Error at line: " << line_count << endl;
+	fprintf(errorout,"Error at line %d: %s\n",line_count, "Syntax error");
+	syntax_error_count++;
 }
 
 void clearFunctionParam(){
@@ -186,12 +179,12 @@ SymbolInfo* insertVar(SymbolInfo* var){
 
 void insertFunc(SymbolInfo* func, SymbolInfo* retType){
 	if(symbolTable->lookUp(func->getName(), (int)(hashValue(func->getName())%NoOfBuckets))!=nullptr){
-		printError("Multiple declaration of "+printError("Multiple declaration of " + var->getName());->getName());
+		printError("Multiple declaration of "+func->getName());
 		clearFunctionParam();
 		return;
 	}
 	if (noOfParam && find(paramType.begin(), paramType.end(), VOID_TYPE) != paramType.end()) {
-		printErrorLog("Parameters can't be of void type in function "+func->getName());
+		printError("Parameters can't be of void type in function "+func->getName());
 		return;
 	}
 	func->setType("ID");
@@ -217,7 +210,7 @@ void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
 	SymbolInfo* temp = symbolTable->lookUp(func->getName(),(int)(hashValue(func->getName())%NoOfBuckets));
 	// to prevent f(int x,float,int y){} type defn but f(void){} allowed
 	if (!(paramType.size() == 1 && paramType[0] == VOID_TYPE) && paramType.size() != noOfParam) {
-		printError("Unnamed prototype parameter not allowed in definition of function " + funcVal->getName());
+		printError("Unnamed prototype parameter not allowed in definition of function " + func->getName());
 	}
 	else if(temp!=nullptr){
 		if(temp->getDecType()!=FUNCTION){
@@ -262,7 +255,7 @@ void insertIntoParamType(SymbolInfo* var){
 	int l = parameters.size();
 	string str = var->getName();
 	for(int i=0;i<l;i++){
-		if(parameters[i]->getName().compare(str)==0){
+		if((&parameters[i])->getName().compare(str)==0){
 			printError("Multiple declaration of "+str+" in parameters");
 			break;
 		}
@@ -739,7 +732,7 @@ void checkFuncReturnType(SymbolInfo *sym) {
 void createScope(){
 	scope = symbolTable->createScopeTable(NoOfBuckets);
 	for(auto param: parameters){
-		insertIntoSymbolTable(param);
+		insertIntoSymbolTable(&param);
 	}
 	clearFunctionParam();
 }

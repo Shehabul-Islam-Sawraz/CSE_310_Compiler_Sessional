@@ -72,12 +72,12 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                         }
                 ;
 
-func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFuncDef($1, $2);} compound_statement
+func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef($1, $2);} compound_statement
                         {
                             setValue(func_definition,popValue(type_specifier)+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
 				            printRuleAndCode(func_definition,"type_specifier ID LPAREN parameter_list RPAREN compound_statement");
                         }
-                |   type_specifier ID LPAREN RPAREN {addFuncDef($1, $2);} compound_statement
+                |   type_specifier ID LPAREN RPAREN {addFunctionDef($1, $2);} compound_statement
                         {
                             setValue(func_definition,popValue(type_specifier)+$2->getName()+"("+")"+popValue(compound_statement));
 				            printRuleAndCode(func_definition,"type_specifier ID LPAREN RPAREN compound_statement");
@@ -206,22 +206,22 @@ statement: var_declaration
                         }
                 |   FOR LPAREN expression_statement expression_statement expression RPAREN statement
                         {
-                            setValue(statement,"for"+"("+popValue(expression_statement)+popValue(expression_statement)+popValue(expression)+")"+popValue(statement));
+                            setValue(statement,(string("for")+"("+popValue(expression_statement)+popValue(expression_statement)+popValue(expression)+")"+popValue(statement)));
 				            printRuleAndCode(statement,"FOR LPAREN expression_statement expression_statement expression RPAREN statement");
                         }
                 |   IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
                         {
-                            setValue(statement,"if"+"("+popValue(expression)+")"+popValue(statement));
+                            setValue(statement,(string("if")+"("+popValue(expression)+")"+popValue(statement)));
 				            printRuleAndCode(statement,"IF LPAREN expression RPAREN statement");
                         }
                 |   IF LPAREN expression RPAREN statement ELSE statement
                         {
-                            setValue(statement,"if"+"("+popValue(expression)+")"+popValue(statement)+"else"+popValue(statement));
+                            setValue(statement,(string("if")+"("+popValue(expression)+")"+popValue(statement)+"else"+popValue(statement)));
 				            printRuleAndCode(statement,"IF LPAREN expression RPAREN statement ELSE statement");
                         }
                 |   WHILE LPAREN expression RPAREN statement
                         {
-                            setValue(statement,"while"+"("+popValue(expression)+")"+popValue(statement));
+                            setValue(statement,(string("while")+"("+popValue(expression)+")"+popValue(statement)));
 				            printRuleAndCode(statement,"WHILE LPAREN expression RPAREN statement");
                         }
                 |   PRINTLN LPAREN ID RPAREN SEMICOLON
@@ -302,8 +302,8 @@ rel_expression: simple_expression
                             $$ = getRelOpVal($1,$2,$3);
                             string s2 = popValue(simple_expression);
 					        string s1 = popValue(simple_expression);
-                            pushVal(rel_expression,s1+$2->getName()+s2);
-					        printRuleLog(rel_expression,"simple_expression RELOP simple_expression");
+                            setValue(rel_expression,s1+$2->getName()+s2);
+					        printRuleAndCode(rel_expression,"simple_expression RELOP simple_expression");
                         }
                 ;
 
@@ -442,7 +442,10 @@ int main(int argc,char *argv[])
     yyin = inputFile;
 	yyparse();
     line_count--;
-    fprintf(logout,"\nTotal Lines: %d\nTotal Errors: %d\n",line_count, error_count);
+    fprintf(logout,"\nTotal Lines: %d\n",line_count);
+    fprintf(errorout,"\nTotal Syntax/Semantic Errors: %d\n",syntax_error_count);
+    fprintf(errorout,"\nTotal Lexical Errors: %d\n",error_count);
+    fprintf(errorout,"\nTotal Warning: %d\n",warning_count);
 
     fclose(yyin);
 	fclose(logout);

@@ -5,6 +5,15 @@ using namespace std;
 
 //FILE *logout, *tokenout;
 
+#define NoOfBuckets 7
+#define ARRAY "ARR"
+#define VARIABLE "VAR"
+#define FUNCTION "FUNC"
+#define INT_TYPE "INT"
+#define FLOAT_TYPE "FLOAT"
+#define VOID_TYPE "VOID"
+#define CHAR_TYPE "CHAR"
+
 class SymbolInfo
 {
 private:
@@ -112,7 +121,7 @@ public:
 		this->arrSize = arrSize;
 	}
 
-    size_t getArrIndex() const {
+    size_t getArrIndex() {
 		return isArray() ? arrIndex : 0;
 	}
 
@@ -181,7 +190,7 @@ public:
         return defInt;
     }
 
-    int &fltValue(){
+    float &fltValue(){
         if(decType==VARIABLE && varType==FLOAT_TYPE){
             if(!floatValues.size()){
                 floatValues.push_back(0);
