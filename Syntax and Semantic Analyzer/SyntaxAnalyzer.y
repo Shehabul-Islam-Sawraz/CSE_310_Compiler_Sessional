@@ -126,7 +126,7 @@ compound_statement: LCURL {createScope();} statements RCURL
 
 var_declaration: type_specifier declaration_list SEMICOLON
                         {
-                            setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ ";");
+                            setValue(var_declaration, popValue(type_specifier)+popValue(declaration_list)+ ";");
                             printRuleAndCode(var_declaration,"type_specifier declaration_list SEMICOLON");
                         }
                 ;
@@ -327,7 +327,10 @@ term:	unary_expression
                         }
                 |   term MULOP unary_expression
                         {
-                            $$ = getMulOpVal($1,$2,$3);
+                            SymbolInfo* s = getMulOpVal($1,$2,$3);
+                            if(s!=nullptr){
+                                $$ = s;
+                            }
                             setValue(term,popValue(term)+$2->getName()+popValue(unary_expression));
 					        printRuleAndCode(term,"term MULOP unary_expression");
                         }
@@ -359,7 +362,10 @@ factor: variable
                         }
                 |   ID LPAREN argument_list RPAREN
                         {
-                            $$ = getFuncCallValue($1);
+                            SymbolInfo* s = getFuncCallValue($1);
+                            if(s!=nullptr){
+                                $$ = s;
+                            }
                             setValue(factor,$1->getName()+"("+popValue(argument_list)+")");
 			                printRuleAndCode(factor,"ID LPAREN argument_list RPAREN");
                         }

@@ -38,7 +38,7 @@ enum NONTERMINAL_TYPE {
 	term, unary_expression, factor, argument_list, arguments, error
 };
 
-bool replaceAll(string source, string toReplace, string replaceBy) {
+bool replaceAll(string &source, string toReplace, string replaceBy) {
 	if (source.find(toReplace, 0) == string::npos){
 		return false;
 	}
@@ -121,6 +121,15 @@ void clearFunctionParam(){
 	noOfParam = 0;
 }
 
+SymbolInfo* nullValue(){
+	SymbolInfo* temp = new SymbolInfo("$NULL$","");
+	temp->setDecType(VARIABLE);
+	temp->setVarType(INT_TYPE);
+	temp->intValues.push_back(0);
+	temp->floatValues.push_back(0);
+	return temp;
+}
+
 SymbolInfo* insertIntoSymbolTable(SymbolInfo* symbol){
     if(scope==nullptr){
         scope = symbolTable->createScopeTable(NoOfBuckets);
@@ -171,10 +180,12 @@ SymbolInfo* insertVar(SymbolInfo* var){
 			var->setDecType(VARIABLE);
 			var->setVarType(variableType);
 			SymbolInfo* temp = insertIntoSymbolTable(var);
+			temp->setDecType(VARIABLE);
+			temp->setVarType(variableType);
 			return temp;
 		}
 	}
-	return nullptr;
+	return nullValue();
 }
 
 void insertFunc(SymbolInfo* func, SymbolInfo* retType){
@@ -289,7 +300,7 @@ SymbolInfo* getVariable(SymbolInfo* sym){
 	else{
 		return temp;
 	}
-	return nullptr;
+	return nullValue();
 }
 
 void checkExistance(SymbolInfo* sym){
@@ -303,6 +314,7 @@ SymbolInfo* getArrVar(SymbolInfo* sym, SymbolInfo* index){
 	SymbolInfo* temp = symbolTable->lookUp(sym->getName(),(int)(hashValue(sym->getName())%NoOfBuckets));
 	if(temp==nullptr){
 		printError("Undeclared variable "+sym->getName());
+		return nullValue();
 	}
 	else{
 		if(!temp->isArray()){
@@ -350,7 +362,7 @@ SymbolInfo* getConstValue(string val, string varType){
 SymbolInfo* getUnaryOpVal(SymbolInfo* op, SymbolInfo* sym){
 	if (sym->getVarType() == VOID_TYPE) {
 		printError("Invalid Operand for Unary Operation.Operand can't be void");
-		return nullptr;
+		return nullValue();
 	}
 	string uniop = op->getName();
 	SymbolInfo* opVal = new SymbolInfo("","");
@@ -367,7 +379,7 @@ SymbolInfo* getUnaryOpVal(SymbolInfo* op, SymbolInfo* sym){
 SymbolInfo* getNotOpVal(SymbolInfo* sym){
 	if(sym->getVarType()==VOID_TYPE){
 		printError("Invalid Operand for Logical Not Operation");
-		return nullptr;
+		return nullValue();
 	}
 	SymbolInfo* opVal = new SymbolInfo("","");
 	opVal = getConstValue(opVal,INT_TYPE);
@@ -385,7 +397,7 @@ SymbolInfo* getNotOpVal(SymbolInfo* sym){
 SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
 	if (left->getVarType() == VOID_TYPE || right->getVarType() == VOID_TYPE) {
 		printError("Operand of void type.");
-		return nullptr;
+		return nullValue();
 	}
 	string addop = op->getName();
 	SymbolInfo* opVal = new SymbolInfo("","");
@@ -443,12 +455,12 @@ SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
 SymbolInfo* getMulOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
 	if (left->getVarType() == VOID_TYPE || right->getVarType() == VOID_TYPE) {
 		printError("Operand of void type.");
-		return nullptr;
+		return nullValue();
 	}
 	string mulop = op->getName();
 	if(mulop=="%" && (left->getVarType()!=INT_TYPE || right->getVarType()!=INT_TYPE)){
 		printError("Non-Integer operand on modulus operator");
-		return nullptr;
+		return nullValue();
 	}
 	SymbolInfo* opVal = new SymbolInfo("","");
 	if(left->getVarType()==FLOAT_TYPE || right->getVarType()==FLOAT_TYPE){
@@ -533,7 +545,7 @@ SymbolInfo* getMulOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
 SymbolInfo* getAssignExpVal(SymbolInfo* left, SymbolInfo* right){ // Handles assignment expressions e.g. x=2
 	if(left->getVarType()==VOID_TYPE || right->getVarType()==VOID_TYPE){
 		printError("Assign Operation on void type");
-		return nullptr;
+		return nullValue();
 	}
 	if(left->isVariable()){
 		if(right->getVarType()==INT_TYPE){
@@ -555,7 +567,7 @@ SymbolInfo* getAssignExpVal(SymbolInfo* left, SymbolInfo* right){ // Handles ass
 SymbolInfo* getRelOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
 	if(left->getVarType()==VOID_TYPE || right->getVarType()==VOID_TYPE){
 		printError("Can't compare with void type expressions");
-		return nullptr;
+		return nullValue();
 	}
 	string relop = op->getName();
 	SymbolInfo* opVal = new SymbolInfo("","");
@@ -622,7 +634,7 @@ SymbolInfo* getRelOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
 SymbolInfo* getLogicOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
 	if(left->getVarType()==VOID_TYPE || right->getVarType()==VOID_TYPE){
 		printError("Can't compare with void type expressions");
-		return nullptr;
+		return nullValue();
 	}
 	string logicOp = op->getName();
 	SymbolInfo* opVal = new SymbolInfo("","");
@@ -672,7 +684,7 @@ SymbolInfo* getLogicOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
 
 SymbolInfo* getFuncCallValue(SymbolInfo* sym){
 	SymbolInfo* temp = symbolTable->lookUp(sym->getName(),(int)(hashValue(sym->getName())%NoOfBuckets));
-	SymbolInfo* ans = nullptr;
+	SymbolInfo* ans = nullValue();
 	if(temp == nullptr){
 		printError("Undeclared function "+sym->getName());
 	}
@@ -740,5 +752,5 @@ void createScope(){
 void exitScope(){
 	currentFunc = nullptr;
 	symbolTable->printAllScope(logout);
-	symbolTable->exitScope();
+	scope = symbolTable->exitScope();
 }
