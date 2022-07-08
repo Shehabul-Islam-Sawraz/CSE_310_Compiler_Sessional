@@ -18,6 +18,9 @@ vector<string> paramType;
 vector<SymbolInfo> parameters;
 SymbolInfo* currentFunc = nullptr;
 
+bool errorRule = false;
+string lookAheadBuf;
+
 ScopeTable* scope = nullptr;
 SymbolTable* symbolTable = new SymbolTable();
 
@@ -93,6 +96,9 @@ private:
 	stack<string> nonterminals[NONTERMINAL_TYPE::error +1];
 public:
 	string getValue(NONTERMINAL_TYPE nonterminal){
+		if(nonterminals[nonterminal].empty()){
+			return "";
+		}
 		return nonterminals[nonterminal].top();
 	}
 	string popValue(NONTERMINAL_TYPE nonterminal){
@@ -109,11 +115,6 @@ public:
 };
 
 NonTerminalHandler nonTerminalHandler;
-
-void yyerror(const char *s) {
-	fprintf(errorout,"Error at line %d: %s\n",line_count, "Syntax error");
-	syntax_error_count++;
-}
 
 void clearFunctionParam(){
 	paramType.clear();
@@ -156,6 +157,9 @@ string popValue(NONTERMINAL_TYPE nonterminal) {
 
 void printRuleAndCode(NONTERMINAL_TYPE nonterminal, string rule){
 	fprintf(logout,"Line %d: %s : %s\n",line_count, ruleName[nonterminal].data(), rule.data());
+	if(!errorRule){
+		fprintf(parserout,"Line %d: %s : %s\n",line_count, ruleName[nonterminal].data(), rule.data());
+	}
 	fprintf(logout,"%s\n", formatCode(nonTerminalHandler.getValue(nonterminal)).data());
 }
 
@@ -164,9 +168,29 @@ void printError(string error_msg){
 	syntax_error_count++;
 }
 
+void printErrorRecovery(string error_msg, NONTERMINAL_TYPE nonterminal, string rule){
+	printError(error_msg);
+	errorRule = true;
+	printRuleAndCode(nonterminal, rule);
+	errorRule = false;
+	popValue(error);
+	lookAheadBuf.clear();
+}
+
 void printWarning(string error_msg){
 	fprintf(errorout,"Warning at line %d: %s\n",line_count, error_msg.data());
 	warning_count++;
+}
+
+void yyerror(const char *s) {
+	//fprintf(errorout,"Error at line %d: %s\n",line_count, "Syntax error");
+	//syntax_error_count++;
+	cout << "Before Look ahead buf: " << lookAheadBuf << endl;
+	cout << "Error value: " << nonTerminalHandler.getValue(error) << endl;
+	setValue(error, popValue(error)+" "+lookAheadBuf);
+	errorRule = true;
+	lookAheadBuf = yytext;
+	cout << "After Look ahead buf: " << lookAheadBuf << endl;
 }
 
 SymbolInfo* insertVar(SymbolInfo* var){

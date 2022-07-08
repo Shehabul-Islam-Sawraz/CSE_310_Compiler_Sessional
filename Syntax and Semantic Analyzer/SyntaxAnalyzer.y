@@ -70,6 +70,17 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                             setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+";");
                             printRuleAndCode(func_declaration,"type_specifier ID LPAREN RPAREN SEMICOLON");
                         }
+                |   type_specifier ID LPAREN parameter_list RPAREN error
+                        {
+                            clearFunctionParam();
+                            setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+"");
+                            printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN error");
+                        }
+                |   type_specifier ID LPAREN RPAREN error
+                        {
+                            setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"");
+                            printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN RPAREN error");
+                        }
                 ;
 
 func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef($1, $2);} compound_statement
@@ -107,6 +118,16 @@ parameter_list: parameter_list COMMA type_specifier ID
                             paramType.push_back(variableType);
                             setValue(parameter_list,popValue(type_specifier));
 					        printRuleAndCode(parameter_list,"type_specifier");
+                        }
+                |   parameter_list COMMA error ID
+                        {
+                                setValue(parameter_list,popValue(parameter_list)+", "+popValue(error)+" "+$4->getName());
+				printErrorRecovery("Type specifier missing in parameters",parameter_list,"parameter_list COMMA error ID");
+                        }
+                |   error ID
+                        {
+                                setValue(parameter_list,popValue(error)+" "+$2->getName());
+				printErrorRecovery("Type specifier missing in parameters",parameter_list,"error ID");
                         }
                 ;
 
