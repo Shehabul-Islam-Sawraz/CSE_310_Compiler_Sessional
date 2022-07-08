@@ -143,6 +143,30 @@ compound_statement: LCURL {createScope();} statements RCURL
                             printRuleAndCode(compound_statement,"LCURL RCURL");
                             exitScope();
                         }
+                |   LCURL {createScope();} statements error
+                        {
+                            setValue(compound_statement,"{"+popValue(statements)+"\n");
+                            printErrorRecovery("Closing curly brace missing",compound_statement,"LCURL statements error");
+                            exitScope();
+                        }
+                |   error {createScope();} statements RCURL
+                        {
+                            setValue(compound_statement,"\n"+popValue(statements)+"\n}");
+                            printErrorRecovery("Opening curly brace missing",compound_statement,"error statements RCURL");
+                            exitScope();
+                        }
+                |   LCURL {createScope();} error
+                        {
+                            setValue(compound_statement,"{");
+                            printErrorRecovery("Closing curly brace missing",compound_statement,"LCURL error");
+                            exitScope();
+                        }
+                |   error {createScope();} RCURL
+                        {
+                            setValue(compound_statement,"}");
+                            printErrorRecovery("Opening curly brace missing",compound_statement,"error RCURL");
+                            exitScope();
+                        }
                 ;
 
 var_declaration: type_specifier declaration_list SEMICOLON
