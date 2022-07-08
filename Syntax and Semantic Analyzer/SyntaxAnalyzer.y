@@ -174,6 +174,11 @@ var_declaration: type_specifier declaration_list SEMICOLON
                             setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ ";");
                             printRuleAndCode(var_declaration,"type_specifier declaration_list SEMICOLON");
                         }
+                |   type_specifier declaration_list error
+                        {
+                                setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ "");
+                                printErrorRecovery("; missing",var_declaration,"type_specifier declaration_list error");
+                        }
                 ;
 
 type_specifier : INT
@@ -219,6 +224,16 @@ declaration_list : declaration_list COMMA ID
                             insertArr($1, $3);
                             setValue(declaration_list,$1->getName()+"["+$3->getName()+"]");
 				            printRuleAndCode(declaration_list,"ID LTHIRD CONST_INT RTHIRD");
+                        }
+                |   ID LTHIRD error RTHIRD
+                        {
+                                setValue(declaration_list,$1->getName()+"["+popValue(error)+"]");
+                                printErrorRecovery("Constant integer type array size must be provided",declaration_list,"ID LTHIRD error RTHIRD");
+                        }
+                |   declaration_list COMMA ID LTHIRD error RTHIRD
+                        {
+                                setValue(declaration_list,popValue(declaration_list)+","+$3->getName()+"["+popValue(error)+"]");
+                                printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD error RTHIRD");
                         }
                 ;   
 
@@ -281,6 +296,26 @@ statement: var_declaration
                             setValue(statement,"return "+popValue(expression)+";");
 				            printRuleAndCode(statement,"RETURN expression SEMICOLON");
                         }
+                |   IF LPAREN error RPAREN statement %prec LOWER_THAN_ELSE
+                        {
+                                setValue(statement,(string("if")+"("+popValue(error)+")\n"+popValue(statement)));
+                                printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN error RPAREN statement");
+                        }
+                |   IF LPAREN error RPAREN statement ELSE statement
+                        {
+                                setValue(statement,(string("if")+"("+popValue(error)+")\n"+popValue(statement)+"\nelse\n"+popValue(statement)));
+                                printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN error RPAREN statement ELSE statement");
+                        }
+                |   error ELSE { printError("else conditional statement without an if"); } statement
+                        {
+                                setValue(statement,string(popValue(error))+" else"+popVal(statement));
+			        printErrorRecovery("",statement,"error ELSE statement");
+                        }
+                |   RETURN expression error		
+                        {
+                                setValue(statement,"return "+popVal(expression)+"");
+                                printErrorRecovery("; missing",statement,"RETURN expression error");
+                        }
                 ;
 
 expression_statement: SEMICOLON
@@ -292,6 +327,11 @@ expression_statement: SEMICOLON
                         {
                             setValue(expression_statement,popValue(expression)+";");
 					        printRuleAndCode(expression_statement,"expression SEMICOLON");
+                        }
+                |   expression error
+                        {
+                                setValue(expression_statement,popVal(expression)+" "+popValue(error));
+				printErrorRecovery("; missing",expression_statement,"expression error");
                         }
                 ;
 
