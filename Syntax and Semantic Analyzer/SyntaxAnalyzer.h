@@ -752,5 +752,6 @@ void createScope(){
 void exitScope(){
 	currentFunc = nullptr;
 	symbolTable->printAllScope(logout);
+	fprintf(logout,"\n\n");
 	scope = symbolTable->exitScope();
 }
