@@ -30,7 +30,7 @@ start: program
 
 program: program unit
                         {
-                            setValue(program,popValue(program)+"\n"+popValue(unit));
+                            setValue(program,popValue(program)+popValue(unit));
                             printRuleAndCode(program,"program unit");
                         }
                 |   unit
@@ -61,25 +61,25 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                         {
                             insertFunc($2, $1);
                             clearFunctionParam();
-                            setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+";");
+                            setValue(func_declaration,popValue(type_specifier)+$2->getName()+"("+popValue(parameter_list)+")"+";");
                             printRuleAndCode(func_declaration,"type_specifier ID LPAREN parameter_list RPAREN SEMICOLON");
                         }
                 |   type_specifier ID LPAREN RPAREN SEMICOLON
                         {
                             insertFunc($2, $1);
-                            setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+";");
+                            setValue(func_declaration,popValue(type_specifier)+$2->getName()+"("+")"+";");
                             printRuleAndCode(func_declaration,"type_specifier ID LPAREN RPAREN SEMICOLON");
                         }
                 ;
 
 func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef($1, $2);} compound_statement
                         {
-                            setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
+                            setValue(func_definition,popValue(type_specifier)+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
 				            printRuleAndCode(func_definition,"type_specifier ID LPAREN parameter_list RPAREN compound_statement");
                         }
                 |   type_specifier ID LPAREN RPAREN {addFunctionDef($1, $2);} compound_statement
                         {
-                            setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
+                            setValue(func_definition,popValue(type_specifier)+$2->getName()+"("+")"+popValue(compound_statement));
 				            printRuleAndCode(func_definition,"type_specifier ID LPAREN RPAREN compound_statement");
                         }
                 ;
@@ -87,19 +87,19 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef(
 parameter_list: parameter_list COMMA type_specifier ID
                         {
                             insertIntoParamType($4);
-                            setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier)+" "+$4->getName());
+                            setValue(parameter_list,popValue(parameter_list)+","+popValue(type_specifier)+$4->getName());
 					        printRuleAndCode(parameter_list,"parameter_list COMMA type_specifier ID");
                         }
                 |   parameter_list COMMA type_specifier
                         {
                             paramType.push_back(variableType);
-                            setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier));
+                            setValue(parameter_list,popValue(parameter_list)+","+popValue(type_specifier));
 					        printRuleAndCode(parameter_list,"parameter_list COMMA type_specifier");
                         }
                 |   type_specifier ID
                         {
                             insertIntoParamType($2);
-                            setValue(parameter_list,popValue(type_specifier)+" "+$2->getName());
+                            setValue(parameter_list,popValue(type_specifier)+$2->getName());
 					        printRuleAndCode(parameter_list,"type_specifier ID");
                         }
                 |   type_specifier
@@ -112,7 +112,7 @@ parameter_list: parameter_list COMMA type_specifier ID
 
 compound_statement: LCURL {createScope();} statements RCURL
                         {
-                            setValue(compound_statement,"{"+popValue(statements)+"\n}");
+                            setValue(compound_statement,"{"+popValue(statements)+"}");
                             printRuleAndCode(compound_statement,"LCURL statements RCURL");
                             exitScope();
                         }
@@ -126,7 +126,7 @@ compound_statement: LCURL {createScope();} statements RCURL
 
 var_declaration: type_specifier declaration_list SEMICOLON
                         {
-                            setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ ";");
+                            setValue(var_declaration, popValue(type_specifier)+popValue(declaration_list)+ ";");
                             printRuleAndCode(var_declaration,"type_specifier declaration_list SEMICOLON");
                         }
                 ;
@@ -206,22 +206,22 @@ statement: var_declaration
                         }
                 |   FOR LPAREN expression_statement expression_statement expression RPAREN statement
                         {
-                            setValue(statement,(string("for")+"("+popValue(expression_statement)+popValue(expression_statement)+popValue(expression)+")\n"+popValue(statement)));
+                            setValue(statement,(string("for")+"("+popValue(expression_statement)+popValue(expression_statement)+popValue(expression)+")"+popValue(statement)));
 				            printRuleAndCode(statement,"FOR LPAREN expression_statement expression_statement expression RPAREN statement");
                         }
                 |   IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
                         {
-                            setValue(statement,(string("if")+"("+popValue(expression)+")\n"+popValue(statement)));
+                            setValue(statement,(string("if")+"("+popValue(expression)+")"+popValue(statement)));
 				            printRuleAndCode(statement,"IF LPAREN expression RPAREN statement");
                         }
                 |   IF LPAREN expression RPAREN statement ELSE statement
                         {
-                            setValue(statement,(string("if")+"("+popValue(expression)+")\n"+popValue(statement)+"\nelse\n"+popValue(statement)));
+                            setValue(statement,(string("if")+"("+popValue(expression)+")"+popValue(statement)+"else"+popValue(statement)));
 				            printRuleAndCode(statement,"IF LPAREN expression RPAREN statement ELSE statement");
                         }
                 |   WHILE LPAREN expression RPAREN statement
                         {
-                            setValue(statement,(string("while")+"("+popValue(expression)+")\n"+popValue(statement)));
+                            setValue(statement,(string("while")+"("+popValue(expression)+")"+popValue(statement)));
 				            printRuleAndCode(statement,"WHILE LPAREN expression RPAREN statement");
                         }
                 |   PRINTLN LPAREN ID RPAREN SEMICOLON
@@ -233,7 +233,7 @@ statement: var_declaration
                 |   RETURN expression SEMICOLON
                         {
                             checkFuncReturnType($2);
-                            setValue(statement,"return "+popValue(expression)+";");
+                            setValue(statement,"return"+popValue(expression)+";");
 				            printRuleAndCode(statement,"RETURN expression SEMICOLON");
                         }
                 ;
@@ -416,7 +416,7 @@ argument_list: arguments
 arguments: arguments COMMA logic_expression
                         {
                             paramType.push_back($3->getVarType());
-                            setValue(arguments,popValue(arguments)+", "+popValue(logic_expression));
+                            setValue(arguments,popValue(arguments)+","+popValue(logic_expression));
 						    printRuleAndCode(arguments,"arguments COMMA logic_expression");
                         }
                 |   logic_expression

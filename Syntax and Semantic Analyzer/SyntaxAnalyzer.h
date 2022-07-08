@@ -65,13 +65,13 @@ string formatCode(string code){
 	replaceAll(formattedCode, "{", "\n{\n");
 	replaceAll(formattedCode, "}", "\n}\n");
 	while (replaceAll(formattedCode, "\n\n}", "\n}"));
-	while (replaceAll(formattedCode, "}\n\n", "}\n"));
+	//while (replaceAll(formattedCode, "}\n\n", "}\n"));
 	while (replaceAll(formattedCode, "  = ", " = "));
 	while (replaceAll(formattedCode, " =  ", " = "));
 	while (replaceAll(formattedCode, "  == ", " == "));
 	while (replaceAll(formattedCode, " ==  ", " == "));
-	replaceAll(formattedCode, "(", " ( ");
-	replaceAll(formattedCode, ")", " ) ");
+	//replaceAll(formattedCode, "(", " ( ");
+	//replaceAll(formattedCode, ")", " ) ");
 	while (replaceAll(formattedCode, " ++", "++"));
 	while (replaceAll(formattedCode, " --", "--"));
 	while (replaceAll(formattedCode, "\n ", "\n"));
@@ -149,8 +149,9 @@ void setValue(NONTERMINAL_TYPE nonterminal, string value){
 
 string popValue(NONTERMINAL_TYPE nonterminal) {
 	string val = nonTerminalHandler.popValue(nonterminal);
-	val = (isalnum(val[0]) ? " " : "") + val + (isalnum(val[val.length() - 1]) ? " " : "");
-	return val + ((val[val.length() - 1] == ' ') ? "" : " ");
+	//val = (isalnum(val[0]) ? " " : "") + val + (isalnum(val[val.length() - 1]) ? " " : "");
+	//return val + ((val[val.length() - 1] == ' ') ? "" : " ");
+	return val;
 }
 
 void printRuleAndCode(NONTERMINAL_TYPE nonterminal, string rule){
