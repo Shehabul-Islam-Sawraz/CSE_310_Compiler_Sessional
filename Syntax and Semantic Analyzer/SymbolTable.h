@@ -426,6 +426,18 @@ public:
         return nullptr;
     }
 
+    SymbolInfo* lookUpCurrentScope(string name,int index){
+        SymbolInfo* si = nullptr;
+        ScopeTable* scope = this->currentScope;
+        if(scope!=nullptr){
+            si = scope->lookUpScope(name,index);
+            if(si!=nullptr){
+                return si;
+            }
+        }
+        return nullptr;
+    }
+
     void printCurrentScope(FILE* logout){
         if(this->currentScope!=nullptr){
             this->currentScope->printScope(logout);

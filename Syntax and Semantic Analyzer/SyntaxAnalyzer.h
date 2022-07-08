@@ -173,7 +173,7 @@ SymbolInfo* insertVar(SymbolInfo* var){
 		printError("Variable type cannot be void");
 	}
 	else {
-		if(symbolTable->lookUp(var->getName(), (int)(hashValue(var->getName())%NoOfBuckets))!=nullptr){
+		if(symbolTable->lookUpCurrentScope(var->getName(), (int)(hashValue(var->getName())%NoOfBuckets))!=nullptr){
 			printError("Multiple declaration of " + var->getName());
 		}
 		else{

@@ -447,6 +447,7 @@ int main(int argc,char *argv[])
 
     yyin = inputFile;
 	yyparse();
+    symbolTable->printAllScope(logout);
     line_count--;
     fprintf(logout,"\nTotal Lines: %d\n",line_count);
     fprintf(errorout,"\nTotal Syntax/Semantic Errors: %d\n",syntax_error_count);
