@@ -143,30 +143,6 @@ compound_statement: LCURL {createScope();} statements RCURL
                             printRuleAndCode(compound_statement,"LCURL RCURL");
                             exitScope();
                         }
-                |   LCURL {createScope();} statements error
-                        {
-                            setValue(compound_statement,"{"+popValue(statements)+"\n");
-                            printErrorRecovery("Closing curly brace missing",compound_statement,"LCURL statements error");
-                            exitScope();
-                        }
-                |   error {createScope();} statements RCURL
-                        {
-                            setValue(compound_statement,"\n"+popValue(statements)+"\n}");
-                            printErrorRecovery("Opening curly brace missing",compound_statement,"error statements RCURL");
-                            exitScope();
-                        }
-                |   LCURL {createScope();} error
-                        {
-                            setValue(compound_statement,"{");
-                            printErrorRecovery("Closing curly brace missing",compound_statement,"LCURL error");
-                            exitScope();
-                        }
-                |   error {createScope();} RCURL
-                        {
-                            setValue(compound_statement,"}");
-                            printErrorRecovery("Opening curly brace missing",compound_statement,"error RCURL");
-                            exitScope();
-                        }
                 ;
 
 var_declaration: type_specifier declaration_list SEMICOLON
@@ -308,12 +284,12 @@ statement: var_declaration
                         }
                 |   error ELSE { printError("else conditional statement without an if"); } statement
                         {
-                                setValue(statement,string(popValue(error))+" else"+popVal(statement));
+                                setValue(statement,string(popValue(error))+" else"+popValue(statement));
 			        printErrorRecovery("",statement,"error ELSE statement");
                         }
                 |   RETURN expression error		
                         {
-                                setValue(statement,"return "+popVal(expression)+"");
+                                setValue(statement,"return "+popValue(expression)+"");
                                 printErrorRecovery("; missing",statement,"RETURN expression error");
                         }
                 ;
@@ -330,7 +306,7 @@ expression_statement: SEMICOLON
                         }
                 |   expression error
                         {
-                                setValue(expression_statement,popVal(expression)+" "+popValue(error));
+                                setValue(expression_statement,popValue(expression)+" "+popValue(error));
 				printErrorRecovery("; missing",expression_statement,"expression error");
                         }
                 ;
@@ -483,6 +459,17 @@ factor: variable
                             $$ = getINDECOpVal($1,"--");
                             setValue(factor,popValue(variable)+"--");
 			                printRuleAndCode(factor,"variable DECOP");
+                        }
+                |   ID LPAREN argument_list error
+                        {
+                                setValue(factor,$1->getName()+"("+popValue(argument_list)+"");
+			        printErrorRecovery("Right parentheses missing",factor,"ID LPAREN argument_list error"+popValue(error));
+                                clearFunctionParam();
+                        }
+                |   LPAREN expression error
+                        {
+                                setValue(factor,"("+popValue(expression)+"");
+		                printErrorRecovery("Right parentheses missing",factor,"LPAREN expression error");
                         }
                 ;
 
