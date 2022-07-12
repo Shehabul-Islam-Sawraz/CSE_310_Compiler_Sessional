@@ -76,10 +76,32 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+"");
                                         printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN error");
                                 }
+                |       type_specifier ID LPAREN parameter_list error RPAREN SEMICOLON
+                                {
+                                        clearFunctionParam();
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+" "+popValue(error)+")"+";");
+                                        printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN parameter_list error RPAREN SEMICOLON");
+                                }
+                |       type_specifier ID LPAREN parameter_list error RPAREN error
+                                {
+                                        clearFunctionParam();
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+" "+popValue(error)+")"+"");
+                                        printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN parameter_list error RPAREN error");
+                                }
                 |       type_specifier ID LPAREN RPAREN error
                                 {
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"");
                                         printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN RPAREN error");
+                                }
+                |       type_specifier ID LPAREN error RPAREN SEMICOLON
+                                {
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(error)+")"+";");
+                                        printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN error RPAREN SEMICOLON");
+                                }
+                |       type_specifier ID LPAREN error RPAREN error
+                                {
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(error)+")"+"");
+                                        printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN error RPAREN error");
                                 }
                 ;
 
@@ -92,6 +114,16 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef(
                                 {
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
                                         printRuleAndCode(func_definition,"type_specifier ID LPAREN RPAREN compound_statement");
+                                }
+                |       type_specifier ID LPAREN parameter_list error RPAREN compound_statement
+                                {
+                                        setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+" "+popValue(error)+")"+popValue(compound_statement));
+                                        printErrorRecovery("Invalid parameter list",func_definition,"type_specifier ID LPAREN parameter_list error RPAREN compound_statement");
+                                }
+                |       type_specifier ID LPAREN error RPAREN compound_statement
+                                {
+                                        setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(error)+")"+popValue(compound_statement));
+                                        printErrorRecovery("Invalid parameter list",func_definition,"type_specifier ID LPAREN error RPAREN compound_statement");
                                 }
                 ;
 
@@ -118,6 +150,18 @@ parameter_list: parameter_list COMMA type_specifier ID
                                         paramType.push_back(variableType);
                                         setValue(parameter_list,popValue(type_specifier));
                                         printRuleAndCode(parameter_list,"type_specifier");
+                                }
+                |       parameter_list error COMMA type_specifier ID
+                                {
+                                        insertIntoParamType($5);
+                                        setValue(parameter_list,popValue(parameter_list)+" "+popValue(error)+", "+popValue(type_specifier)+" "+$5->getName());
+                                        printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list error COMMA type_specifier ID");
+                                }
+                |       parameter_list error COMMA type_specifier
+                                {
+                                        paramType.push_back(variableType);
+                                        setValue(parameter_list,popValue(parameter_list)+" "+popValue(error)+", "+popValue(type_specifier));
+                                        printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list error COMMA type_specifier");
                                 }
                 |       parameter_list COMMA error ID
                                 {
