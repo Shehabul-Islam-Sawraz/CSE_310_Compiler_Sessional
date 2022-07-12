@@ -212,16 +212,16 @@ var_declaration: type_specifier declaration_list SEMICOLON
                                         setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ ";");
                                         printRuleAndCode(var_declaration,"type_specifier declaration_list SEMICOLON");
                                 }
-                |       type_specifier declaration_list error
-                                {
-                                        setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ "");
-                                        printErrorRecovery("; missing",var_declaration,"type_specifier declaration_list error");
-                                }
+                //|       type_specifier declaration_list error
+                //                {
+                //                        setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ "");
+                //                        printErrorRecovery("; missing",var_declaration,"type_specifier declaration_list error");
+                //                }
                 |       type_specifier declaration_list error SEMICOLON
                                 {
                                         setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+" "+popValue(error)+";");
-                                        //printErrorRecovery("Invalid variable declaration",var_declaration,"type_specifier declaration_list error SEMICOLON");
-                                        printRuleAndCode(var_declaration,"type_specifier declaration_list error SEMICOLON");
+                                        printErrorRecovery("Invalid variable declaration",var_declaration,"type_specifier declaration_list error SEMICOLON");
+                                        //printRuleAndCode(var_declaration,"type_specifier declaration_list error SEMICOLON");
                                 }
                 ;
 
@@ -473,6 +473,28 @@ simple_expression: term
                                         setValue(simple_expression,popValue(simple_expression)+$2->getName()+popValue(term));
                                         printRuleAndCode(simple_expression,"simple_expression ADDOP term");
                                 }
+                |       simple_expression error ADDOP term
+                                {
+                                        string s = popValue(error);
+                                        setValue(simple_expression,popValue(simple_expression)+" "+s+" "+$3->getName()+popValue(term));
+                                        //printRuleAndCode(simple_expression,"simple_expression ADDOP term");
+                                        printErrorRecovery("Invalid operation",simple_expression,"simple_expression error ADDOP term");
+                                }
+                |       simple_expression ADDOP error term
+                                {
+                                        string s = popValue(error);
+                                        setValue(simple_expression,popValue(simple_expression)+$2->getName()+" "+s+" "+popValue(term));
+                                        //printRuleAndCode(simple_expression,"simple_expression ADDOP term");
+                                        printErrorRecovery("Invalid operation",simple_expression,"simple_expression ADDOP error term");
+                                }
+                |       simple_expression error ADDOP error term
+                                {
+                                        string s1 = popValue(error);
+                                        string s2 = popValue(error);
+                                        setValue(simple_expression,popValue(simple_expression)+" "+s2+" "+$2->getName()+" "+s1+" "+popValue(term));
+                                        //printRuleAndCode(simple_expression,"simple_expression ADDOP term");
+                                        printErrorRecovery("Invalid operation",simple_expression,"simple_expression error ADDOP error term");
+                                }
                 ;
 
 term:	unary_expression
@@ -488,6 +510,26 @@ term:	unary_expression
                                         }
                                         setValue(term,popValue(term)+$2->getName()+popValue(unary_expression));
                                         printRuleAndCode(term,"term MULOP unary_expression");
+                                }
+                |       term error MULOP unary_expression
+                                {
+                                        setValue(term,popValue(term)+" "+popValue(error)+" "+$3->getName()+popValue(unary_expression));
+                                        //printRuleAndCode(term,"term MULOP unary_expression");
+                                        printErrorRecovery("Invalid operation",term,"term error MULOP unary_expression");
+                                }
+                |       term MULOP error unary_expression
+                                {
+                                        setValue(term,popValue(term)+$2->getName()+" "+popValue(error)+" "+popValue(unary_expression));
+                                        //printRuleAndCode(term,"term MULOP unary_expression");
+                                        printErrorRecovery("Invalid operation",term,"term MULOP error unary_expression");
+                                }
+                |       term error MULOP error unary_expression
+                                {
+                                        string s1 = popValue(error);
+                                        string s2 = popValue(error);
+                                        setValue(term,popValue(term)+" "+s2+" "+$3->getName()+" "+s1+" "+popValue(unary_expression));
+                                        //printRuleAndCode(term,"term MULOP unary_expression");
+                                        printErrorRecovery("Invalid operation",term,"term error MULOP error unary_expression");
                                 }
                 ;
 
@@ -507,6 +549,18 @@ unary_expression: ADDOP unary_expression
                                 {
                                         setValue(unary_expression,popValue(factor));
                                         printRuleAndCode(unary_expression,"factor");
+                                }
+                |       ADDOP error unary_expression
+                                {
+                                        setValue(unary_expression,$1->getName()+" "+popValue(error)+" "+popValue(unary_expression));
+                                        //printRuleAndCode(unary_expression,"ADDOP unary_expression");
+                                        printErrorRecovery("Invalid unary operation",unary_expression,"ADDOP error unary_expression");
+                                } 
+                |       NOT error unary_expression
+                                {
+                                        setValue(unary_expression,"!"+" "+popValue(error)+" "+popValue(unary_expression));
+                                        //printRuleAndCode(unary_expression,"NOT unary_expression");
+                                        printErrorRecovery("Invalid unary operation",unary_expression,"NOT error unary_expression");
                                 }
                 ;
 

@@ -55,6 +55,7 @@ bool replaceAll(string &source, string toReplace, string replaceBy) {
 string formatCode(string code){
 	string formattedCode = code;
 	while (replaceAll(formattedCode, " ;", ";"));
+	while (replaceAll(formattedCode, " ,", ","));
 	replaceAll(formattedCode, ";", ";\n");
 	replaceAll(formattedCode, ";\n\n", ";\n");
 	while (replaceAll(formattedCode, "( ", "("));
