@@ -187,6 +187,24 @@ compound_statement: LCURL {createScope();} statements RCURL
                                         printRuleAndCode(compound_statement,"LCURL RCURL");
                                         exitScope();
                                 }
+                |       LCURL {createScope();} statements error RCURL
+                                {
+                                        setValue(compound_statement,"{"+popValue(statements)+" "+popValue(error)+"\n}");
+                                        printRuleAndCode(compound_statement,"LCURL statements RCURL");
+                                        exitScope();
+                                }  
+                |       LCURL {createScope();} error statements RCURL
+                                {
+                                        setValue(compound_statement,"{"+popValue(error)+" "+popValue(statements)+"\n}");
+                                        printRuleAndCode(compound_statement,"LCURL statements RCURL");
+                                        exitScope();
+                                }     
+                |       LCURL {createScope();} error RCURL
+                                {
+                                        setValue(compound_statement,"{"+popValue(error)+"}");
+                                        printRuleAndCode(compound_statement,"LCURL RCURL");
+                                        exitScope();
+                                }    
                 ;
 
 var_declaration: type_specifier declaration_list SEMICOLON
@@ -198,6 +216,12 @@ var_declaration: type_specifier declaration_list SEMICOLON
                                 {
                                         setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ "");
                                         printErrorRecovery("; missing",var_declaration,"type_specifier declaration_list error");
+                                }
+                |       type_specifier declaration_list error SEMICOLON
+                                {
+                                        setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+" "+popValue(error)+";");
+                                        //printErrorRecovery("Invalid variable declaration",var_declaration,"type_specifier declaration_list error SEMICOLON");
+                                        printRuleAndCode(var_declaration,"type_specifier declaration_list error SEMICOLON");
                                 }
                 ;
 
@@ -255,6 +279,27 @@ declaration_list : declaration_list COMMA ID
                                         setValue(declaration_list,popValue(declaration_list)+","+$3->getName()+"["+popValue(error)+"]");
                                         printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD error RTHIRD");
                                 }
+                |       declaration_list error COMMA ID
+                                {
+                                        insertVar($4);
+                                        setValue(declaration_list, popValue(declaration_list)+" "+popValue(error)+","+$4->getName());
+                                        //printRuleAndCode(declaration_list,"declaration_list COMMA ID");
+                                        printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list error COMMA ID");
+                                }
+                |       declaration_list error COMMA ID LTHIRD CONST_INT RTHIRD
+                                {
+                                        insertArr($4,$6);
+                                        setValue(declaration_list,popValue(declaration_list)+" "+popValue(error)+","+$4->getName()+"["+$6->getName()+"]");
+                                        //printRuleAndCode(declaration_list,"declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
+                                        printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list error COMMA ID LTHIRD CONST_INT RTHIRD");
+                                }
+                |       declaration_list error COMMA ID LTHIRD error RTHIRD
+                                {
+                                        string s1 = popValue(error);
+                                        string s2 = popValue(error);
+                                        setValue(declaration_list,popValue(declaration_list)+" "+s2+","+$4->getName()+"["+s1+"]");
+                                        printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD error RTHIRD");
+                                }
                 ;   
 
 statements: statement
@@ -267,6 +312,11 @@ statements: statement
                                         setValue(statements,popValue(statements)+popValue(statement));
                                         printRuleAndCode(statements,"statements statement");
                                 }
+                |       statements error statement
+                                {
+                                        setValue(statements,popValue(statements)+" "+popValue(error)+" "+popValue(statement));
+                                        printRuleAndCode(statements,"statements error statement");
+                                }                
                 ;
 
 statement: var_declaration 
