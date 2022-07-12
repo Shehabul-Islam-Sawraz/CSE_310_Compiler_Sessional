@@ -430,6 +430,16 @@ expression: logic_expression
                                         setValue(expression,popValue(variable)+"="+popValue(logic_expression));
                                         printRuleAndCode(expression,"variable ASSIGNOP logic_expression");
                                 }
+                |       error ASSIGNOP logic_expression
+                                {
+                                        setValue(expression,popValue(error)+"="+popValue(logic_expression));
+                                        printErrorRecovery("Invalid operation",expression,"error ASSIGNOP logic_expression");
+                                }
+                |       variable ASSIGNOP error
+                                {
+                                        setValue(expression,popValue(variable)+"="+popValue(error));
+                                        printErrorRecovery("Invalid operation",expression,"variable ASSIGNOP error");
+                                }
                 ;
 
 logic_expression: rel_expression
@@ -445,6 +455,22 @@ logic_expression: rel_expression
                                         setValue(logic_expression,r1+$2->getName()+r2);
                                         printRuleAndCode(logic_expression,"rel_expression LOGICOP rel_expression");
                                 }
+                |       error LOGICOP rel_expression
+                                {
+                                        string s2 = popValue(rel_expression);
+                                        string s1 = popValue(rel_expression);
+                                        string s3 = popValue(error);
+                                        setValue(logic_expression,s3+" "+$3->getName()+s2);
+                                        printErrorRecovery("Invalid operation",logic_expression,"error LOGICOP rel_expression");
+                                }
+                |       rel_expression LOGICOP error
+                                {
+                                        string s2 = popValue(rel_expression);
+                                        string s1 = popValue(rel_expression);
+                                        string s3 = popValue(error);
+                                        setValue(logic_expression,s1+$2->getName()+" "+s3);
+                                        printErrorRecovery("Invalid operation",logic_expression,"rel_expression LOGICOP error");
+                                }
                 ;
 
 rel_expression: simple_expression
@@ -452,13 +478,31 @@ rel_expression: simple_expression
                                         setValue(rel_expression,popValue(simple_expression));
                                         printRuleAndCode(rel_expression,"simple_expression");
                                 }
-                |        simple_expression RELOP simple_expression
+                |       simple_expression RELOP simple_expression
                                 {
                                         $$ = getRelOpVal($1,$2,$3);
                                         string s2 = popValue(simple_expression);
                                         string s1 = popValue(simple_expression);
                                         setValue(rel_expression,s1+$2->getName()+s2);
                                         printRuleAndCode(rel_expression,"simple_expression RELOP simple_expression");
+                                }
+                |       error RELOP simple_expression
+                                {
+                                        string s2 = popValue(simple_expression);
+                                        string s1 = popValue(simple_expression);
+                                        string s3 = popValue(error);
+                                        setValue(rel_expression,s3+" "+$3->getName()+s2);
+                                        //printRuleAndCode(rel_expression,"simple_expression RELOP simple_expression");
+                                        printErrorRecovery("Invalid operation",rel_expression,"error RELOP simple_expression");
+                                }
+                |       simple_expression RELOP error
+                                {
+                                        string s2 = popValue(simple_expression);
+                                        string s1 = popValue(simple_expression);
+                                        string s3 = popValue(error);
+                                        setValue(rel_expression,s1+$2->getName()+" "+s3);
+                                        //printRuleAndCode(rel_expression,"simple_expression RELOP simple_expression");
+                                        printErrorRecovery("Invalid operation",rel_expression,"simple_expression RELOP error");
                                 }
                 ;
 
@@ -473,27 +517,19 @@ simple_expression: term
                                         setValue(simple_expression,popValue(simple_expression)+$2->getName()+popValue(term));
                                         printRuleAndCode(simple_expression,"simple_expression ADDOP term");
                                 }
-                |       simple_expression error ADDOP term
+                |       error ADDOP term
                                 {
                                         string s = popValue(error);
-                                        setValue(simple_expression,popValue(simple_expression)+" "+s+" "+$3->getName()+popValue(term));
+                                        setValue(simple_expression,s+" "+$3->getName()+popValue(term));
                                         //printRuleAndCode(simple_expression,"simple_expression ADDOP term");
-                                        printErrorRecovery("Invalid operation",simple_expression,"simple_expression error ADDOP term");
+                                        printErrorRecovery("Invalid operation",simple_expression,"error ADDOP term");
                                 }
-                |       simple_expression ADDOP error term
+                |       simple_expression ADDOP error
                                 {
                                         string s = popValue(error);
-                                        setValue(simple_expression,popValue(simple_expression)+$2->getName()+" "+s+" "+popValue(term));
+                                        setValue(simple_expression,popValue(simple_expression)+$2->getName()+" "+s);
                                         //printRuleAndCode(simple_expression,"simple_expression ADDOP term");
-                                        printErrorRecovery("Invalid operation",simple_expression,"simple_expression ADDOP error term");
-                                }
-                |       simple_expression error ADDOP error term
-                                {
-                                        string s1 = popValue(error);
-                                        string s2 = popValue(error);
-                                        setValue(simple_expression,popValue(simple_expression)+" "+s2+" "+$2->getName()+" "+s1+" "+popValue(term));
-                                        //printRuleAndCode(simple_expression,"simple_expression ADDOP term");
-                                        printErrorRecovery("Invalid operation",simple_expression,"simple_expression error ADDOP error term");
+                                        printErrorRecovery("Invalid operation",simple_expression,"simple_expression ADDOP error");
                                 }
                 ;
 
@@ -511,25 +547,17 @@ term:	unary_expression
                                         setValue(term,popValue(term)+$2->getName()+popValue(unary_expression));
                                         printRuleAndCode(term,"term MULOP unary_expression");
                                 }
-                |       term error MULOP unary_expression
+                |       error MULOP unary_expression
                                 {
-                                        setValue(term,popValue(term)+" "+popValue(error)+" "+$3->getName()+popValue(unary_expression));
+                                        setValue(term,popValue(error)+" "+$3->getName()+popValue(unary_expression));
                                         //printRuleAndCode(term,"term MULOP unary_expression");
-                                        printErrorRecovery("Invalid operation",term,"term error MULOP unary_expression");
+                                        printErrorRecovery("Invalid operation",term,"error MULOP unary_expression");
                                 }
-                |       term MULOP error unary_expression
+                |       term MULOP error
                                 {
-                                        setValue(term,popValue(term)+$2->getName()+" "+popValue(error)+" "+popValue(unary_expression));
+                                        setValue(term,popValue(term)+$2->getName()+" "+popValue(error));
                                         //printRuleAndCode(term,"term MULOP unary_expression");
-                                        printErrorRecovery("Invalid operation",term,"term MULOP error unary_expression");
-                                }
-                |       term error MULOP error unary_expression
-                                {
-                                        string s1 = popValue(error);
-                                        string s2 = popValue(error);
-                                        setValue(term,popValue(term)+" "+s2+" "+$3->getName()+" "+s1+" "+popValue(unary_expression));
-                                        //printRuleAndCode(term,"term MULOP unary_expression");
-                                        printErrorRecovery("Invalid operation",term,"term error MULOP error unary_expression");
+                                        printErrorRecovery("Invalid operation",term,"term MULOP error");
                                 }
                 ;
 
@@ -558,7 +586,7 @@ unary_expression: ADDOP unary_expression
                                 } 
                 |       NOT error unary_expression
                                 {
-                                        setValue(unary_expression,"!"+" "+popValue(error)+" "+popValue(unary_expression));
+                                        setValue(unary_expression,"! "+popValue(error)+" "+popValue(unary_expression));
                                         //printRuleAndCode(unary_expression,"NOT unary_expression");
                                         printErrorRecovery("Invalid unary operation",unary_expression,"NOT error unary_expression");
                                 }
