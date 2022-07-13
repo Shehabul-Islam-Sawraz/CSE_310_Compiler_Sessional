@@ -62,6 +62,7 @@ string formatCode(string code){
 	while (replaceAll(formattedCode, " (", "("));
 	while (replaceAll(formattedCode, ") ", ")"));
 	while (replaceAll(formattedCode, " )", ")"));
+	while (replaceAll(formattedCode, "\n{", "{"));
 	while (replaceAll(formattedCode, "{ ", "{"));
 	while (replaceAll(formattedCode, " {", "{"));
 	while (replaceAll(formattedCode, "} ", "}"));
@@ -170,9 +171,16 @@ void printError(string error_msg){
 }
 
 void printErrorRecovery(string error_msg, NONTERMINAL_TYPE nonterminal, string rule){
-	printError(error_msg);
+	if(error_msg==""){
+		printError("Syntax error");
+	}
+	else{
+		printError(error_msg);
+	}
 	errorRule = true;
-	printRuleAndCode(nonterminal, rule);
+	if(error_msg!=""){
+		printRuleAndCode(nonterminal, rule);
+	}
 	errorRule = false;
 	popValue(error);
 	lookAheadBuf.clear();
@@ -271,7 +279,11 @@ void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
 		int l = paramType.size();
 		for(int i=0;i<l;i++){
 			if(v[i].compare(paramType[i])!=0){
-				printError((i+1)+" th argument mismatch in function "+temp->getName());
+				stringstream ss;  
+				ss<<(i+1);  
+				string s;  
+				ss>>s;  
+				printError(s+"th argument mismatch in function "+temp->getName());
 				iserr = true;
 			}
 		}
@@ -729,7 +741,11 @@ SymbolInfo* getFuncCallValue(SymbolInfo* sym){
 			int l = paramType.size();
 			for(int i=0;i<l;i++){
 				if(v[i].compare(paramType[i])!=0){
-					printError((i+1)+" th argument mismatch in function "+temp->getName());
+					stringstream ss;  
+					ss<<(i+1);  
+					string s;  
+					ss>>s;  
+					printError(s+"th argument mismatch in function "+temp->getName());
 				}
 			}
 		}
@@ -763,7 +779,7 @@ SymbolInfo* getINDECOpVal(SymbolInfo* sym, string op){
 
 void checkFuncReturnType(SymbolInfo *sym) {
 	if (currentFunc != nullptr && currentFunc->getFuncRetType() != sym->getVarType()) {
-		printError(currentFunc->getName() + ": function return type does not match with return expression type");
+		printError("Function return type does not match with return expression type in function "+ currentFunc->getName());
 	}
 }
 

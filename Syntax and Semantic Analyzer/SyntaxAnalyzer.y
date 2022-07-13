@@ -73,7 +73,7 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                 |       type_specifier ID LPAREN parameter_list RPAREN error
                                 {
                                         clearFunctionParam();
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+"");
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+"\n");
                                         printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN error");
                                 }
                 |       type_specifier ID LPAREN parameter_list error RPAREN SEMICOLON
@@ -85,12 +85,12 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                 |       type_specifier ID LPAREN parameter_list error RPAREN error
                                 {
                                         clearFunctionParam();
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+" "+popValue(error)+")"+"");
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+" "+popValue(error)+")"+"\n");
                                         printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN parameter_list error RPAREN error");
                                 }
                 |       type_specifier ID LPAREN RPAREN error
                                 {
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"");
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"\n");
                                         printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN RPAREN error");
                                 }
                 |       type_specifier ID LPAREN error RPAREN SEMICOLON
@@ -100,7 +100,7 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                                 }
                 |       type_specifier ID LPAREN error RPAREN error
                                 {
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(error)+")"+"");
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(error)+")"+"\n");
                                         printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN error RPAREN error");
                                 }
                 ;
@@ -115,12 +115,12 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef(
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
                                         printRuleAndCode(func_definition,"type_specifier ID LPAREN RPAREN compound_statement");
                                 }
-                |       type_specifier ID LPAREN parameter_list error RPAREN compound_statement
+                |       type_specifier ID LPAREN parameter_list error RPAREN {addFunctionDef($1, $2);} compound_statement
                                 {
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+" "+popValue(error)+")"+popValue(compound_statement));
                                         printErrorRecovery("Invalid parameter list",func_definition,"type_specifier ID LPAREN parameter_list error RPAREN compound_statement");
                                 }
-                |       type_specifier ID LPAREN error RPAREN compound_statement
+                |       type_specifier ID LPAREN error RPAREN {addFunctionDef($1, $2);} compound_statement
                                 {
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(error)+")"+popValue(compound_statement));
                                         printErrorRecovery("Invalid parameter list",func_definition,"type_specifier ID LPAREN error RPAREN compound_statement");
@@ -321,12 +321,12 @@ statements: statement
 
 statement: var_declaration 
                                 {
-                                        setValue(statement,popValue(var_declaration));
+                                        setValue(statement,"\t"+popValue(var_declaration));
                                         printRuleAndCode(statement,"var_declaration");
                                 }
                 |       expression_statement
                                 {
-                                        setValue(statement,popValue(expression_statement));
+                                        setValue(statement,"\t"+popValue(expression_statement));
                                         printRuleAndCode(statement,"expression_statement");
                                 }
                 |       compound_statement
@@ -357,13 +357,13 @@ statement: var_declaration
                 |       PRINTLN LPAREN ID RPAREN SEMICOLON
                                 {
                                         checkExistance($3);
-                                        setValue(statement,"("+$3->getName()+")"+";");
+                                        setValue(statement,"\tprintf("+$3->getName()+")"+";");
                                         printRuleAndCode(statement,"PRINTLN LPAREN ID RPAREN SEMICOLON");
                                 }
                 |       RETURN expression SEMICOLON
                                 {
                                         checkFuncReturnType($2);
-                                        setValue(statement,"return "+popValue(expression)+";");
+                                        setValue(statement,"\t"+string("return ")+popValue(expression)+";");
                                         printRuleAndCode(statement,"RETURN expression SEMICOLON");
                                 }
                 |       IF LPAREN error RPAREN statement %prec LOWER_THAN_ELSE
@@ -400,7 +400,7 @@ expression_statement: SEMICOLON
                                 }
                 |       expression error
                                 {
-                                        setValue(expression_statement,popValue(expression)+" "+popValue(error));
+                                        setValue(expression_statement,popValue(expression)+" "+popValue(error)+"\n");
                                         printErrorRecovery("; missing",expression_statement,"expression error");
                                 }
                 ;

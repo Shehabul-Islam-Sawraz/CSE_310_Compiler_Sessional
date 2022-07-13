@@ -448,7 +448,8 @@ public:
         ScopeTable* scope = this->currentScope;
         while(scope!=nullptr){
             scope->printScope(logout);
-            cout << endl;
+            //cout << endl;
+            fprintf(logout,"\n\n");
             scope = scope->getParentScope();
         }
     }
