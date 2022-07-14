@@ -18,7 +18,6 @@
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
-%error-verbose
 
 %%
 start: program
@@ -74,34 +73,34 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                                 {
                                         clearFunctionParam();
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+"\n");
-                                        printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN error");
+                                        printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN");
                                 }
                 |       type_specifier ID LPAREN parameter_list error RPAREN SEMICOLON
                                 {
                                         clearFunctionParam();
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+" "+popValue(error)+")"+";");
-                                        printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN parameter_list error RPAREN SEMICOLON");
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+";");
+                                        printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN SEMICOLON");
                                 }
                 |       type_specifier ID LPAREN parameter_list error RPAREN error
                                 {
                                         clearFunctionParam();
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+" "+popValue(error)+")"+"\n");
-                                        printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN parameter_list error RPAREN error");
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+"\n");
+                                        printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN");
                                 }
                 |       type_specifier ID LPAREN RPAREN error
                                 {
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"\n");
-                                        printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN RPAREN error");
+                                        printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN RPAREN");
                                 }
                 |       type_specifier ID LPAREN error RPAREN SEMICOLON
                                 {
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(error)+")"+";");
-                                        printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN error RPAREN SEMICOLON");
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+";");
+                                        printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN RPAREN SEMICOLON");
                                 }
                 |       type_specifier ID LPAREN error RPAREN error
                                 {
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(error)+")"+"\n");
-                                        printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN error RPAREN error");
+                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"\n");
+                                        printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN RPAREN");
                                 }
                 ;
 
@@ -117,13 +116,11 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef(
                                 }
                 |       type_specifier ID LPAREN parameter_list error RPAREN {addFunctionDef($1, $2);} compound_statement
                                 {
-                                        setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+" "+popValue(error)+")"+popValue(compound_statement));
-                                        printErrorRecovery("Invalid parameter list",func_definition,"type_specifier ID LPAREN parameter_list error RPAREN compound_statement");
+                                        setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
                                 }
                 |       type_specifier ID LPAREN error RPAREN {addFunctionDef($1, $2);} compound_statement
                                 {
-                                        setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(error)+")"+popValue(compound_statement));
-                                        printErrorRecovery("Invalid parameter list",func_definition,"type_specifier ID LPAREN error RPAREN compound_statement");
+                                        setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
                                 }
                 ;
 
@@ -154,74 +151,67 @@ parameter_list: parameter_list COMMA type_specifier ID
                 |       parameter_list error COMMA type_specifier ID
                                 {
                                         insertIntoParamType($5);
-                                        setValue(parameter_list,popValue(parameter_list)+" "+popValue(error)+", "+popValue(type_specifier)+" "+$5->getName());
-                                        printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list error COMMA type_specifier ID");
+                                        setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier)+" "+$5->getName());
+                                        printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list COMMA type_specifier ID");
                                 }
                 |       parameter_list error COMMA type_specifier
                                 {
                                         paramType.push_back(variableType);
-                                        setValue(parameter_list,popValue(parameter_list)+" "+popValue(error)+", "+popValue(type_specifier));
-                                        printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list error COMMA type_specifier");
+                                        setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier));
+                                        printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list COMMA type_specifier");
                                 }
                 |       parameter_list COMMA error ID
                                 {
-                                        setValue(parameter_list,popValue(parameter_list)+", "+popValue(error)+" "+$4->getName());
-                                        printErrorRecovery("Type specifier missing in parameters",parameter_list,"parameter_list COMMA error ID");
+                                        setValue(parameter_list,popValue(parameter_list)+", "+$4->getName());
+                                        printErrorRecovery("Type specifier missing in parameters",parameter_list,"parameter_list COMMA ID");
                                 }
                 |       error ID
                                 {
-                                        setValue(parameter_list,popValue(error)+" "+$2->getName());
-                                        printErrorRecovery("Type specifier missing in parameters",parameter_list,"error ID");
+                                        setValue(parameter_list,$2->getName());
+                                        printErrorRecovery("Type specifier missing in parameters",parameter_list,"ID");
                                 }
                 ;
 
-compound_statement: LCURL {createScope();} statements RCURL
+compound_statement: LCURL create_scope statements RCURL
                                 {
                                         setValue(compound_statement,"{"+popValue(statements)+"\n}");
                                         printRuleAndCode(compound_statement,"LCURL statements RCURL");
                                         exitScope();
                                 }
-                |       LCURL {createScope();} RCURL
+                |       LCURL create_scope RCURL
                                 {
                                         setValue(compound_statement,"{}");
                                         printRuleAndCode(compound_statement,"LCURL RCURL");
                                         exitScope();
-                                }
-                |       LCURL {createScope();} statements error RCURL
+                                } 
+                |       LCURL create_scope error statements RCURL
                                 {
-                                        setValue(compound_statement,"{"+popValue(statements)+" "+popValue(error)+"\n}");
-                                        printRuleAndCode(compound_statement,"LCURL statements RCURL");
-                                        exitScope();
-                                }  
-                |       LCURL {createScope();} error statements RCURL
-                                {
-                                        setValue(compound_statement,"{"+popValue(error)+" "+popValue(statements)+"\n}");
+                                        setValue(compound_statement,"{"+popValue(statements)+"\n}");
                                         printRuleAndCode(compound_statement,"LCURL statements RCURL");
                                         exitScope();
                                 }     
-                |       LCURL {createScope();} error RCURL
+                |       LCURL create_scope error RCURL
                                 {
-                                        setValue(compound_statement,"{"+popValue(error)+"}");
+                                        setValue(compound_statement,"{}");
                                         printRuleAndCode(compound_statement,"LCURL RCURL");
                                         exitScope();
                                 }    
                 ;
 
+create_scope:
+                                {
+                                        createScope();
+                                }
+                ;
 var_declaration: type_specifier declaration_list SEMICOLON
                                 {
                                         setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ ";");
                                         printRuleAndCode(var_declaration,"type_specifier declaration_list SEMICOLON");
                                 }
-                //|       type_specifier declaration_list error
-                //                {
-                //                        setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ "");
-                //                        printErrorRecovery("; missing",var_declaration,"type_specifier declaration_list error");
-                //                }
                 |       type_specifier declaration_list error SEMICOLON
                                 {
-                                        setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+" "+popValue(error)+";");
-                                        printErrorRecovery("Invalid variable declaration",var_declaration,"type_specifier declaration_list error SEMICOLON");
-                                        //printRuleAndCode(var_declaration,"type_specifier declaration_list error SEMICOLON");
+                                        setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+";");
+                                        printErrorRecovery("Invalid variable declaration",var_declaration,"type_specifier declaration_list SEMICOLON");
                                 }
                 ;
 
@@ -271,34 +261,32 @@ declaration_list : declaration_list COMMA ID
                                 }
                 |       ID LTHIRD error RTHIRD
                                 {
-                                        setValue(declaration_list,$1->getName()+"["+popValue(error)+"]");
-                                        printErrorRecovery("Constant integer type array size must be provided",declaration_list,"ID LTHIRD error RTHIRD");
+                                        setValue(declaration_list,$1->getName()+"["+"]");
+                                        printErrorRecovery("Constant integer type array size must be provided",declaration_list,"ID LTHIRD RTHIRD");
                                 }
                 |       declaration_list COMMA ID LTHIRD error RTHIRD
                                 {
-                                        setValue(declaration_list,popValue(declaration_list)+","+$3->getName()+"["+popValue(error)+"]");
-                                        printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD error RTHIRD");
+                                        setValue(declaration_list,popValue(declaration_list)+","+$3->getName()+"["+"]");
+                                        printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD RTHIRD");
                                 }
                 |       declaration_list error COMMA ID
                                 {
                                         insertVar($4);
-                                        setValue(declaration_list, popValue(declaration_list)+" "+popValue(error)+","+$4->getName());
-                                        //printRuleAndCode(declaration_list,"declaration_list COMMA ID");
-                                        printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list error COMMA ID");
+                                        setValue(declaration_list, popValue(declaration_list)+","+$4->getName());
+                                        printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list COMMA ID");
                                 }
                 |       declaration_list error COMMA ID LTHIRD CONST_INT RTHIRD
                                 {
                                         insertArr($4,$6);
-                                        setValue(declaration_list,popValue(declaration_list)+" "+popValue(error)+","+$4->getName()+"["+$6->getName()+"]");
-                                        //printRuleAndCode(declaration_list,"declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
-                                        printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list error COMMA ID LTHIRD CONST_INT RTHIRD");
+                                        setValue(declaration_list,popValue(declaration_list)+","+$4->getName()+"["+$6->getName()+"]");
+                                        printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
                                 }
                 |       declaration_list error COMMA ID LTHIRD error RTHIRD
                                 {
-                                        string s1 = popValue(error);
-                                        string s2 = popValue(error);
-                                        setValue(declaration_list,popValue(declaration_list)+" "+s2+","+$4->getName()+"["+s1+"]");
-                                        printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD error RTHIRD");
+                                        //string s1 = popValue(error);
+                                        //string s2 = popValue(error);
+                                        setValue(declaration_list,popValue(declaration_list)+","+$4->getName()+"["+"]");
+                                        printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD RTHIRD");
                                 }
                 ;   
 
@@ -312,10 +300,9 @@ statements: statement
                                         setValue(statements,popValue(statements)+popValue(statement));
                                         printRuleAndCode(statements,"statements statement");
                                 }
-                |       statements error statement
+                |       statements error
                                 {
-                                        setValue(statements,popValue(statements)+" "+popValue(error)+" "+popValue(statement));
-                                        printRuleAndCode(statements,"statements error statement");
+                                        setValue(statements,popValue(statements));
                                 }                
                 ;
 
@@ -368,23 +355,23 @@ statement: var_declaration
                                 }
                 |       IF LPAREN error RPAREN statement %prec LOWER_THAN_ELSE
                                 {
-                                        setValue(statement,(string("if")+"("+popValue(error)+")\n"+popValue(statement)));
-                                        printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN error RPAREN statement");
+                                        setValue(statement,(string("if")+"("+")\n"+popValue(statement)));
+                                        printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN RPAREN statement");
                                 }
                 |       IF LPAREN error RPAREN statement ELSE statement
                                 {
-                                        setValue(statement,(string("if")+"("+popValue(error)+")\n"+popValue(statement)+"\nelse\n"+popValue(statement)));
-                                        printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN error RPAREN statement ELSE statement");
+                                        setValue(statement,(string("if")+"("+")\n"+popValue(statement)+"\nelse\n"+popValue(statement)));
+                                        printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN RPAREN statement ELSE statement");
                                 }
-                |       error ELSE { printError("else conditional statement without an if"); } statement
+                |       error ELSE statement
                                 {
-                                        setValue(statement,string(popValue(error))+" else"+popValue(statement));
-                                        printErrorRecovery("",statement,"error ELSE statement");
+                                        setValue(statement,"else"+popValue(statement));
+                                        printErrorRecovery("Else conditional statement without an if",statement,"ELSE statement");
                                 }
                 |       RETURN expression error		
                                 {
                                         setValue(statement,"return "+popValue(expression)+"");
-                                        printErrorRecovery("; missing",statement,"RETURN expression error");
+                                        printErrorRecovery("; missing",statement,"RETURN expression");
                                 }
                 ;
 
@@ -397,11 +384,6 @@ expression_statement: SEMICOLON
                                 {
                                         setValue(expression_statement,popValue(expression)+";");
                                         printRuleAndCode(expression_statement,"expression SEMICOLON");
-                                }
-                |       expression error
-                                {
-                                        setValue(expression_statement,popValue(expression)+" "+popValue(error)+"\n");
-                                        printErrorRecovery("; missing",expression_statement,"expression error");
                                 }
                 ;
 
@@ -430,16 +412,6 @@ expression: logic_expression
                                         setValue(expression,popValue(variable)+"="+popValue(logic_expression));
                                         printRuleAndCode(expression,"variable ASSIGNOP logic_expression");
                                 }
-                |       error ASSIGNOP logic_expression
-                                {
-                                        setValue(expression,popValue(error)+"="+popValue(logic_expression));
-                                        printErrorRecovery("Invalid operation",expression,"error ASSIGNOP logic_expression");
-                                }
-                |       variable ASSIGNOP error
-                                {
-                                        setValue(expression,popValue(variable)+"="+popValue(error));
-                                        printErrorRecovery("Invalid operation",expression,"variable ASSIGNOP error");
-                                }
                 ;
 
 logic_expression: rel_expression
@@ -454,22 +426,6 @@ logic_expression: rel_expression
                                         string r1 = popValue(rel_expression);
                                         setValue(logic_expression,r1+$2->getName()+r2);
                                         printRuleAndCode(logic_expression,"rel_expression LOGICOP rel_expression");
-                                }
-                |       error LOGICOP rel_expression
-                                {
-                                        string s2 = popValue(rel_expression);
-                                        string s1 = popValue(rel_expression);
-                                        string s3 = popValue(error);
-                                        setValue(logic_expression,s3+" "+$3->getName()+s2);
-                                        printErrorRecovery("Invalid operation",logic_expression,"error LOGICOP rel_expression");
-                                }
-                |       rel_expression LOGICOP error
-                                {
-                                        string s2 = popValue(rel_expression);
-                                        string s1 = popValue(rel_expression);
-                                        string s3 = popValue(error);
-                                        setValue(logic_expression,s1+$2->getName()+" "+s3);
-                                        printErrorRecovery("Invalid operation",logic_expression,"rel_expression LOGICOP error");
                                 }
                 ;
 
@@ -486,24 +442,6 @@ rel_expression: simple_expression
                                         setValue(rel_expression,s1+$2->getName()+s2);
                                         printRuleAndCode(rel_expression,"simple_expression RELOP simple_expression");
                                 }
-                |       error RELOP simple_expression
-                                {
-                                        string s2 = popValue(simple_expression);
-                                        string s1 = popValue(simple_expression);
-                                        string s3 = popValue(error);
-                                        setValue(rel_expression,s3+" "+$3->getName()+s2);
-                                        //printRuleAndCode(rel_expression,"simple_expression RELOP simple_expression");
-                                        printErrorRecovery("Invalid operation",rel_expression,"error RELOP simple_expression");
-                                }
-                |       simple_expression RELOP error
-                                {
-                                        string s2 = popValue(simple_expression);
-                                        string s1 = popValue(simple_expression);
-                                        string s3 = popValue(error);
-                                        setValue(rel_expression,s1+$2->getName()+" "+s3);
-                                        //printRuleAndCode(rel_expression,"simple_expression RELOP simple_expression");
-                                        printErrorRecovery("Invalid operation",rel_expression,"simple_expression RELOP error");
-                                }
                 ;
 
 simple_expression: term
@@ -516,20 +454,6 @@ simple_expression: term
                                         $$ = getAddOpVal($1,$2,$3);
                                         setValue(simple_expression,popValue(simple_expression)+$2->getName()+popValue(term));
                                         printRuleAndCode(simple_expression,"simple_expression ADDOP term");
-                                }
-                |       error ADDOP term
-                                {
-                                        string s = popValue(error);
-                                        setValue(simple_expression,s+" "+$3->getName()+popValue(term));
-                                        //printRuleAndCode(simple_expression,"simple_expression ADDOP term");
-                                        printErrorRecovery("Invalid operation",simple_expression,"error ADDOP term");
-                                }
-                |       simple_expression ADDOP error
-                                {
-                                        string s = popValue(error);
-                                        setValue(simple_expression,popValue(simple_expression)+$2->getName()+" "+s);
-                                        //printRuleAndCode(simple_expression,"simple_expression ADDOP term");
-                                        printErrorRecovery("Invalid operation",simple_expression,"simple_expression ADDOP error");
                                 }
                 ;
 
@@ -546,18 +470,6 @@ term:	unary_expression
                                         }
                                         setValue(term,popValue(term)+$2->getName()+popValue(unary_expression));
                                         printRuleAndCode(term,"term MULOP unary_expression");
-                                }
-                |       error MULOP unary_expression
-                                {
-                                        setValue(term,popValue(error)+" "+$3->getName()+popValue(unary_expression));
-                                        //printRuleAndCode(term,"term MULOP unary_expression");
-                                        printErrorRecovery("Invalid operation",term,"error MULOP unary_expression");
-                                }
-                |       term MULOP error
-                                {
-                                        setValue(term,popValue(term)+$2->getName()+" "+popValue(error));
-                                        //printRuleAndCode(term,"term MULOP unary_expression");
-                                        printErrorRecovery("Invalid operation",term,"term MULOP error");
                                 }
                 ;
 
@@ -577,18 +489,6 @@ unary_expression: ADDOP unary_expression
                                 {
                                         setValue(unary_expression,popValue(factor));
                                         printRuleAndCode(unary_expression,"factor");
-                                }
-                |       ADDOP error unary_expression
-                                {
-                                        setValue(unary_expression,$1->getName()+" "+popValue(error)+" "+popValue(unary_expression));
-                                        //printRuleAndCode(unary_expression,"ADDOP unary_expression");
-                                        printErrorRecovery("Invalid unary operation",unary_expression,"ADDOP error unary_expression");
-                                } 
-                |       NOT error unary_expression
-                                {
-                                        setValue(unary_expression,"! "+popValue(error)+" "+popValue(unary_expression));
-                                        //printRuleAndCode(unary_expression,"NOT unary_expression");
-                                        printErrorRecovery("Invalid unary operation",unary_expression,"NOT error unary_expression");
                                 }
                 ;
 
@@ -638,14 +538,14 @@ factor: variable
                                 }
                 |       ID LPAREN argument_list error
                                 {
-                                        setValue(factor,$1->getName()+"("+popValue(argument_list)+"");
-                                        printErrorRecovery("Right parentheses missing",factor,"ID LPAREN argument_list error"+popValue(error));
+                                        setValue(factor,$1->getName()+"("+popValue(argument_list));
+                                        printErrorRecovery("Right parentheses missing",factor,"ID LPAREN argument_list");
                                         clearFunctionParam();
                                 }
                 |       LPAREN expression error
                                 {
                                         setValue(factor,"("+popValue(expression)+"");
-                                        printErrorRecovery("Right parentheses missing",factor,"LPAREN expression error");
+                                        printErrorRecovery("Right parentheses missing",factor,"LPAREN expression");
                                 }
                 ;
 
@@ -678,7 +578,7 @@ arguments: arguments COMMA logic_expression
 
 int main(int argc,char *argv[])
 {
-    if(argc!=2){
+        if(argc!=2){
 		cout << "Please provide input file name" << endl;
 		return 0;
 	}
@@ -693,19 +593,19 @@ int main(int argc,char *argv[])
 	errorout= fopen("error.txt","w");
 	parserout= fopen("parser.txt","w");
 
-    yyin = inputFile;
+        yyin = inputFile;
 	yyparse();
-    symbolTable->printAllScope(logout);
-    line_count--;
-    fprintf(logout,"\nTotal Lines: %d\n",line_count);
-    fprintf(errorout,"\nTotal Syntax/Semantic Errors: %d\n",syntax_error_count);
-    fprintf(errorout,"\nTotal Lexical Errors: %d\n",error_count);
-    fprintf(errorout,"\nTotal Warning: %d\n",warning_count);
+        symbolTable->printAllScope(logout);
+        line_count--;
+        fprintf(logout,"\nTotal Lines: %d\n",line_count);
+        fprintf(errorout,"\nTotal Syntax/Semantic Errors: %d\n",syntax_error_count);
+        fprintf(errorout,"\nTotal Lexical Errors: %d\n",error_count);
+        fprintf(errorout,"\nTotal Warning: %d\n",warning_count);
 
-    fclose(yyin);
+        fclose(yyin);
 	fclose(logout);
-    fclose(errorout);
-    fclose(parserout);
+        fclose(errorout);
+        fclose(parserout);
 
 	return 0;
 }

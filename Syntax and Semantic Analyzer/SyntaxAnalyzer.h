@@ -192,14 +192,14 @@ void printWarning(string error_msg){
 }
 
 void yyerror(const char *s) {
-	//fprintf(errorout,"Error at line %d: %s\n",line_count, "Syntax error");
-	//syntax_error_count++;
-	cout << "Before Look ahead buf: " << lookAheadBuf << endl;
-	cout << "Error value: " << nonTerminalHandler.getValue(error) << endl;
+	fprintf(errorout,"Error at line %d: %s\n",line_count, "Syntax error");
+	syntax_error_count++;
+	//cout << "Before Look ahead buf: " << lookAheadBuf << endl;
+	//cout << "Error value: " << nonTerminalHandler.getValue(error) << endl;
 	setValue(error, popValue(error)+" "+lookAheadBuf);
 	errorRule = true;
 	lookAheadBuf = yytext;
-	cout << "After Look ahead buf: " << lookAheadBuf << endl;
+	//cout << "After Look ahead buf: " << lookAheadBuf << endl;
 }
 
 SymbolInfo* insertVar(SymbolInfo* var){
@@ -291,13 +291,13 @@ void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
 			return;
 		}
 		temp->setIsFuncDeclared(true);
+		return;
 	}
-	else{
-		insertFunc(func,retType);
-		func = symbolTable->lookUp(func->getName(),(int)(hashValue(func->getName())%NoOfBuckets));
-		func->setIsFuncDeclared(true);
-		currentFunc = func;
-	}
+	
+	insertFunc(func,retType);
+	func = symbolTable->lookUp(func->getName(),(int)(hashValue(func->getName())%NoOfBuckets));
+	func->setIsFuncDeclared(true);
+	currentFunc = func;
 }
 
 void insertIntoParamType(SymbolInfo* var){
@@ -311,8 +311,6 @@ void insertIntoParamType(SymbolInfo* var){
 	}
 	paramType.push_back(variableType);
 	noOfParam++;
-	//var->setDecType(VARIABLE);
-	//var->setVarType(variableType);
 	SymbolInfo* temp = new SymbolInfo(var->getName(), var->getType());
 	temp->setDecType(VARIABLE);
 	temp->setVarType(variableType);
