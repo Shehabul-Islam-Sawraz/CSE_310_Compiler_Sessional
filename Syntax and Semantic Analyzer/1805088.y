@@ -321,6 +321,16 @@ statement: var_declaration
                                         setValue(statement,popValue(compound_statement));
                                         printRuleAndCode(statement,"compound_statement");
                                 }
+                |       func_definition
+                                {
+                                        setValue(statement,popValue(func_definition));
+                                        printErrorRecovery("Invalid scoping of function", statement, "func_definition");
+                                }
+                |       func_declaration
+                                {
+                                        setValue(statement,popValue(func_declaration));
+                                        printErrorRecovery("Invalid scoping of function", statement, "func_declaration");
+                                }
                 |       FOR LPAREN expression_statement expression_statement expression RPAREN statement
                                 {
                                         setValue(statement,(string("for")+"("+popValue(expression_statement)+popValue(expression_statement)+popValue(expression)+")\n"+popValue(statement)));
@@ -352,6 +362,11 @@ statement: var_declaration
                                         checkFuncReturnType($2);
                                         setValue(statement,"\t"+string("return ")+popValue(expression)+";");
                                         printRuleAndCode(statement,"RETURN expression SEMICOLON");
+                                }
+                |       RETURN SEMICOLON
+                                {
+                                        setValue(statement,"\t"+string("return ")+";");
+                                        printRuleAndCode(statement,"RETURN SEMICOLON");
                                 }
                 |       IF LPAREN error RPAREN statement %prec LOWER_THAN_ELSE
                                 {
