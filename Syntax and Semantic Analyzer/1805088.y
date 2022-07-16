@@ -77,28 +77,48 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                                 }
                 |       type_specifier ID LPAREN parameter_list error RPAREN SEMICOLON
                                 {
+                                        /**
+                                                To handle errors like: 
+                                                void foo(int x-y);
+                                        **/
                                         clearFunctionParam();
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+";");
                                         printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN SEMICOLON");
                                 }
                 |       type_specifier ID LPAREN parameter_list error RPAREN error
                                 {
+                                        /**
+                                                To handle errors like: 
+                                                void foo(int x-y)
+                                        **/
                                         clearFunctionParam();
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+"\n");
                                         printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN");
                                 }
                 |       type_specifier ID LPAREN RPAREN error
                                 {
+                                        /**
+                                                To handle errors like: 
+                                                void foo()
+                                        **/
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"\n");
                                         printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN RPAREN");
                                 }
                 |       type_specifier ID LPAREN error RPAREN SEMICOLON
                                 {
+                                        /**
+                                                To handle errors like: 
+                                                void foo(-);
+                                        **/
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+";");
                                         printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN RPAREN SEMICOLON");
                                 }
                 |       type_specifier ID LPAREN error RPAREN error
                                 {
+                                        /**
+                                                To handle errors like: 
+                                                void foo(-)
+                                        **/
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"\n");
                                         printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN RPAREN");
                                 }
@@ -116,10 +136,18 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef(
                                 }
                 |       type_specifier ID LPAREN parameter_list error RPAREN {addFunctionDef($1, $2);} compound_statement
                                 {
+                                        /**
+                                                To handle cases like :
+                                                void foo(int x-y){}
+                                        **/
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
                                 }
                 |       type_specifier ID LPAREN error RPAREN {addFunctionDef($1, $2);} compound_statement
                                 {
+                                        /**
+                                                To handle cases like :
+                                                void foo(-){}
+                                        **/
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
                                 }
                 ;
@@ -150,12 +178,20 @@ parameter_list: parameter_list COMMA type_specifier ID
                                 }
                 |       parameter_list error COMMA type_specifier ID
                                 {
+                                         /**
+                                                To handle errors like:
+                                                void foo(int x-y,int z){}
+                                        **/
                                         insertIntoParamType($5);
                                         setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier)+" "+$5->getName());
                                         printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list COMMA type_specifier ID");
                                 }
                 |       parameter_list error COMMA type_specifier
                                 {
+                                        /**
+                                                To handle cases like:
+                                                void foo(int x-y,int);
+                                        **/
                                         paramType.push_back(variableType);
                                         setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier));
                                         printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list COMMA type_specifier");
@@ -210,6 +246,12 @@ var_declaration: type_specifier declaration_list SEMICOLON
                                 }
                 |       type_specifier declaration_list error SEMICOLON
                                 {
+                                        /**
+                                                To handle errors like :
+                                                int x-y;
+                                                int x[10]-y;
+                                                int x[10.5]-y;
+                                        **/ 
                                         setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+";");
                                         printErrorRecovery("Invalid variable declaration",var_declaration,"type_specifier declaration_list SEMICOLON");
                                 }
@@ -271,18 +313,30 @@ declaration_list : declaration_list COMMA ID
                                 }
                 |       declaration_list error COMMA ID
                                 {
+                                        /**
+                                                To handle errors like :
+                                                int x-y,z;
+                                        **/ 
                                         insertVar($4);
                                         setValue(declaration_list, popValue(declaration_list)+","+$4->getName());
                                         printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list COMMA ID");
                                 }
                 |       declaration_list error COMMA ID LTHIRD CONST_INT RTHIRD
                                 {
+                                        /**
+                                                To handle errors like :
+                                                int x-y,z[10];
+                                        **/ 
                                         insertArr($4,$6);
                                         setValue(declaration_list,popValue(declaration_list)+","+$4->getName()+"["+$6->getName()+"]");
                                         printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
                                 }
                 |       declaration_list error COMMA ID LTHIRD error RTHIRD
                                 {
+                                        /**
+                                                To handle errors like :
+                                                int x-y,z[10.5];
+                                        **/
                                         //string s1 = popValue(error);
                                         //string s2 = popValue(error);
                                         setValue(declaration_list,popValue(declaration_list)+","+$4->getName()+"["+"]");
@@ -365,6 +419,9 @@ statement: var_declaration
                                 }
                 |       RETURN SEMICOLON
                                 {
+                                        /***
+                                                EXTRA RULE ADDED 
+                                        ***/
                                         setValue(statement,"\t"+string("return ")+";");
                                         printRuleAndCode(statement,"RETURN SEMICOLON");
                                 }
