@@ -2,9 +2,10 @@
     #include "SyntaxAnalyzer.h"
 %}
 
+%define parse.error verbose
+
 %union{
     SymbolInfo* symbolInfo;
-    vector<SymbolInfo*>* vectorsymbol;
 }
 
 %token IF ELSE SWITCH CASE DEFAULT FOR DO WHILE INT FLOAT DOUBLE CHAR STRING VOID BREAK RETURN CONTINUE
@@ -14,7 +15,20 @@
 %token <symbolInfo>ID CONST_INT CONST_FLOAT CONST_CHAR ADDOP MULOP LOGICOP RELOP BITOP
 
 %type <symbolInfo>type_specifier expression logic_expression rel_expression simple_expression term unary_expression factor variable
-%type <vectorsymbol>declaration_list var_declaration func_declaration parameter_list unit expression_statement arguments argument_list statement statements compound_statement func_definition program 
+
+%left COMMA
+%right ASSIGNOP
+%left LOGICOP
+%left RELOP
+%left ADDOP
+%left MULOP
+%left LCURL RCURL
+%left LPAREN RPAREN
+
+%right PREFIX_INCOP
+%left POSTFIX_INCOP
+%right PREFIX_DECOP
+%left POSTFIX_DECOP
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -422,6 +436,7 @@ statement: var_declaration
                                         /***
                                                 EXTRA RULE ADDED 
                                         ***/
+                                        checkFuncReturnType();
                                         setValue(statement,"\t"+string("return ")+";");
                                         printRuleAndCode(statement,"RETURN SEMICOLON");
                                 }
@@ -596,16 +611,28 @@ factor: variable
                                         setValue(factor,$1->getName());
                                         printRuleAndCode(factor,"CONST_FLOAT");
                                 }
-                |       variable INCOP
+                |       variable INCOP %prec POSTFIX_INCOP
                                 {
-                                        $$ = getINDECOpVal($1,"++");
+                                        $$ = getINDECOpVal($1,"++","post");
                                         setValue(factor,popValue(variable)+"++");
                                         printRuleAndCode(factor,"variable INCOP");
                                 }
-                |       variable DECOP
+                |       variable DECOP %prec POSTFIX_DECOP
                                 {
-                                        $$ = getINDECOpVal($1,"--");
+                                        $$ = getINDECOpVal($1,"--","post");
                                         setValue(factor,popValue(variable)+"--");
+                                        printRuleAndCode(factor,"variable DECOP");
+                                }
+                |       INCOP variable %prec PREFIX_INCOP
+                                {
+                                        $$ = getINDECOpVal($2,"++","pre");
+                                        setValue(factor,"++"+popValue(variable));
+                                        printRuleAndCode(factor,"variable INCOP");
+                                }
+                |       DECOP variable %prec PREFIX_DECOP
+                                {
+                                        $$ = getINDECOpVal($2,"--","pre");
+                                        setValue(factor,"--"+popValue(variable));
                                         printRuleAndCode(factor,"variable DECOP");
                                 }
                 |       ID LPAREN argument_list error

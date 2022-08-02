@@ -19,6 +19,7 @@ vector<SymbolInfo> parameters;
 SymbolInfo* currentFunc = nullptr;
 
 bool errorRule = false;
+bool isReturnedFromFunction = false;
 string lookAheadBuf;
 
 ScopeTable* scope = nullptr;
@@ -587,15 +588,36 @@ SymbolInfo* getAssignExpVal(SymbolInfo* left, SymbolInfo* right){ // Handles ass
 		if(right->getVarType()==INT_TYPE){
 			if(left->getVarType()==FLOAT_TYPE){
 				printWarning("Assigning integer value to float");
+				left->setVarValue(static_cast<float>(right->intValue()*1.0));
 			}
-			left->setVarValue(right->intValue());
+			else{
+				left->setVarValue(right->intValue());
+			}
 		}
 		else{
 			if(left->getVarType()==INT_TYPE){
 				printWarning("Assigning float value to integer");
+				left->setVarValue(static_cast<int>(right->fltValue()));
 			}
-			left->setVarValue(right->fltValue());
+			else{
+				left->setVarValue(right->fltValue());
+			}
 		}
+	}
+	else if(left->isArray()){
+		if(right->getVarType()==INT_TYPE){
+			if(left->getVarType()==FLOAT_TYPE){
+				printWarning("Assigning integer value to float type array");
+			}
+		}
+		else{
+			if(left->getVarType()==INT_TYPE){
+				printWarning("Assigning float value to integer type array");
+			}
+		}
+	}
+	else if(left->isFunction()){
+		printError("Can't assign value to a function");
 	}
 	return left;
 }
@@ -753,30 +775,66 @@ SymbolInfo* getFuncCallValue(SymbolInfo* sym){
 	return ans;
 }
 
-SymbolInfo* getINDECOpVal(SymbolInfo* sym, string op){
+SymbolInfo* getINDECOpVal(SymbolInfo* sym, string op, string type){
 	SymbolInfo* opVal = new SymbolInfo("","");
 	opVal = getConstValue(opVal, sym->getVarType());
 	if(op=="++"){
-		if (sym->getVarType() == INT_TYPE) {
+		if (sym->getVarType() == INT_TYPE && type=="pre") {
 			opVal->intValue() = ++sym->intValue();
 		} 
-		else if (sym->getVarType() == FLOAT_TYPE) {
+		else if (sym->getVarType() == FLOAT_TYPE && type=="pre") {
 			opVal->fltValue() = ++sym->fltValue();
+		}
+		else if (sym->getVarType() == INT_TYPE && type=="post") {
+			opVal->intValue() = sym->intValue();
+		} 
+		else if (sym->getVarType() == FLOAT_TYPE && type=="post") {
+			opVal->fltValue() = sym->fltValue();
+		}
+		if(sym->getDecType()==VARIABLE){
+			if (sym->getVarType() == INT_TYPE) {
+				sym->intValue() = sym->intValue()+1;
+			} 
+			else if (sym->getVarType() == FLOAT_TYPE) {
+				sym->fltValue() = sym->fltValue()+1;
+			}
 		}
 	}
 	else if(op=="--"){
-		if (sym->getVarType() == INT_TYPE) {
+		if (sym->getVarType() == INT_TYPE && type=="pre") {
 			opVal->intValue() = --sym->intValue();
 		} 
-		else if (sym->getVarType() == FLOAT_TYPE) {
+		else if (sym->getVarType() == FLOAT_TYPE && type=="pre") {
 			opVal->fltValue() = --sym->fltValue();
+		}
+		else if (sym->getVarType() == INT_TYPE && type=="post") {
+			opVal->intValue() = sym->intValue();
+		} 
+		else if (sym->getVarType() == FLOAT_TYPE && type=="post") {
+			opVal->fltValue() = sym->fltValue();
+		}
+		if(sym->getDecType()==VARIABLE){
+			if (sym->getVarType() == INT_TYPE) {
+				sym->intValue() = sym->intValue()-1;
+			} 
+			else if (sym->getVarType() == FLOAT_TYPE) {
+				sym->fltValue() = sym->fltValue()-1;
+			}
 		}
 	}
 	return opVal;
 }
 
 void checkFuncReturnType(SymbolInfo *sym) {
+	isReturnedFromFunction = true;
 	if (currentFunc != nullptr && currentFunc->getFuncRetType() != sym->getVarType()) {
+		printError("Function return type does not match with return expression type in function "+ currentFunc->getName());
+	}
+}
+
+void checkFuncReturnType() {
+	isReturnedFromFunction = true;
+	if (currentFunc != nullptr && currentFunc->getFuncRetType() != "VOID") {
 		printError("Function return type does not match with return expression type in function "+ currentFunc->getName());
 	}
 }
@@ -790,8 +848,12 @@ void createScope(){
 }
 
 void exitScope(){
+	if(currentFunc!=nullptr && isReturnedFromFunction==false && currentFunc->getFuncRetType()!=VOID_TYPE){
+		printWarning(currentFunc->getName() + " function with return type " + currentFunc->getFuncRetType() + " has no return statement");
+	}
 	currentFunc = nullptr;
 	symbolTable->printAllScope(logout);
 	fprintf(logout,"\n\n");
 	scope = symbolTable->exitScope();
+	isReturnedFromFunction = false;
 }
