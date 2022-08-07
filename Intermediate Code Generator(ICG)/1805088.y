@@ -35,59 +35,31 @@
 
 %%
 start: program
-                        {
-                                setValue(start,popValue(program));
-                                printRuleAndCode(start,"program");
-                        }
+                        {}
                 ;
 
 program: program unit
-                                {
-                                        setValue(program,popValue(program)+"\n"+popValue(unit));
-                                        printRuleAndCode(program,"program unit");
-                                }
+                                {}
                 |       unit
-                                {
-                                        setValue(program,popValue(unit));
-                                        printRuleAndCode(program,"unit");
-                                }
                 ;
 
 unit:   var_declaration
-                                {
-                                        setValue(unit,popValue(var_declaration));
-                                        printRuleAndCode(unit,"var_declaration");
-                                }
                 |       func_declaration
-                                {
-                                        setValue(unit,popValue(func_declaration));
-                                        printRuleAndCode(unit,"func_declaration");
-                                }
                 |       func_definition
-                                {
-                                        setValue(unit,popValue(func_definition));
-                                        printRuleAndCode(unit,"func_definition");
-                                }
                 ;
 
 func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                                 {
                                         insertFunc($2, $1);
                                         clearFunctionParam();
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+";");
-                                        printRuleAndCode(func_declaration,"type_specifier ID LPAREN parameter_list RPAREN SEMICOLON");
                                 }       
                 |       type_specifier ID LPAREN RPAREN SEMICOLON
                                 {
                                         insertFunc($2, $1);
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+";");
-                                        printRuleAndCode(func_declaration,"type_specifier ID LPAREN RPAREN SEMICOLON");
                                 }
                 |       type_specifier ID LPAREN parameter_list RPAREN error
                                 {
                                         clearFunctionParam();
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+"\n");
-                                        printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN");
                                 }
                 |       type_specifier ID LPAREN parameter_list error RPAREN SEMICOLON
                                 {
@@ -96,8 +68,8 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                                                 void foo(int x-y);
                                         **/
                                         clearFunctionParam();
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+";");
-                                        printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN SEMICOLON");
+                                        //printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN SEMICOLON");
+                                        printError("Invalid parameter list");
                                 }
                 |       type_specifier ID LPAREN parameter_list error RPAREN error
                                 {
@@ -106,8 +78,8 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                                                 void foo(int x-y)
                                         **/
                                         clearFunctionParam();
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+"\n");
-                                        printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN");
+                                        //printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN");
+                                        printError("; missing. Error in function parameter list");
                                 }
                 |       type_specifier ID LPAREN RPAREN error
                                 {
@@ -115,8 +87,8 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                                                 To handle errors like: 
                                                 void foo()
                                         **/
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"\n");
-                                        printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN RPAREN");
+                                        //printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN RPAREN");
+                                        printError("; missing");
                                 }
                 |       type_specifier ID LPAREN error RPAREN SEMICOLON
                                 {
@@ -124,8 +96,8 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                                                 To handle errors like: 
                                                 void foo(-);
                                         **/
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+";");
-                                        printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN RPAREN SEMICOLON");
+                                        //printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN RPAREN SEMICOLON");
+                                        printError("Invalid parameter list");
                                 }
                 |       type_specifier ID LPAREN error RPAREN error
                                 {
@@ -133,28 +105,21 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                                                 To handle errors like: 
                                                 void foo(-)
                                         **/
-                                        setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"\n");
-                                        printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN RPAREN");
+                                        //printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN RPAREN");
+                                        printError("; missing. Error in function parameter list");
                                 }
                 ;
 
 func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef($1, $2);} compound_statement
-                                {
-                                        setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
-                                        printRuleAndCode(func_definition,"type_specifier ID LPAREN parameter_list RPAREN compound_statement");
-                                }
+                                {}
                 |       type_specifier ID LPAREN RPAREN {addFunctionDef($1, $2);} compound_statement
-                                {
-                                        setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
-                                        printRuleAndCode(func_definition,"type_specifier ID LPAREN RPAREN compound_statement");
-                                }
+                                {}
                 |       type_specifier ID LPAREN parameter_list error RPAREN {addFunctionDef($1, $2);} compound_statement
                                 {
                                         /**
                                                 To handle cases like :
                                                 void foo(int x-y){}
                                         **/
-                                        setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
                                 }
                 |       type_specifier ID LPAREN error RPAREN {addFunctionDef($1, $2);} compound_statement
                                 {
@@ -162,33 +127,24 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef(
                                                 To handle cases like :
                                                 void foo(-){}
                                         **/
-                                        setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
                                 }
                 ;
 
 parameter_list: parameter_list COMMA type_specifier ID
                                 {
                                         insertIntoParamType($4);
-                                        setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier)+" "+$4->getName());
-                                        printRuleAndCode(parameter_list,"parameter_list COMMA type_specifier ID");
                                 }
                 |       parameter_list COMMA type_specifier
                                 {
                                         paramType.push_back(variableType);
-                                        setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier));
-                                        printRuleAndCode(parameter_list,"parameter_list COMMA type_specifier");
                                 }
                 |       type_specifier ID
                                 {
                                         insertIntoParamType($2);
-                                        setValue(parameter_list,popValue(type_specifier)+" "+$2->getName());
-                                        printRuleAndCode(parameter_list,"type_specifier ID");
                                 }
                 |       type_specifier
                                 {
                                         paramType.push_back(variableType);
-                                        setValue(parameter_list,popValue(type_specifier));
-                                        printRuleAndCode(parameter_list,"type_specifier");
                                 }
                 |       parameter_list error COMMA type_specifier ID
                                 {
@@ -197,8 +153,8 @@ parameter_list: parameter_list COMMA type_specifier ID
                                                 void foo(int x-y,int z){}
                                         **/
                                         insertIntoParamType($5);
-                                        setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier)+" "+$5->getName());
-                                        printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list COMMA type_specifier ID");
+                                        //printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list COMMA type_specifier ID");
+                                        printError("Invalid parameter list");
                                 }
                 |       parameter_list error COMMA type_specifier
                                 {
@@ -207,43 +163,35 @@ parameter_list: parameter_list COMMA type_specifier ID
                                                 void foo(int x-y,int);
                                         **/
                                         paramType.push_back(variableType);
-                                        setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier));
-                                        printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list COMMA type_specifier");
+                                        //printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list COMMA type_specifier");
+                                        printError("Invalid parameter list");
                                 }
                 |       parameter_list COMMA error ID
                                 {
-                                        setValue(parameter_list,popValue(parameter_list)+", "+$4->getName());
-                                        printErrorRecovery("Type specifier missing in parameters",parameter_list,"parameter_list COMMA ID");
+                                        //printErrorRecovery("Type specifier missing in parameters",parameter_list,"parameter_list COMMA ID");
+                                        printError("Type specifier missing in parameters");
                                 }
                 |       error ID
                                 {
-                                        setValue(parameter_list,$2->getName());
-                                        printErrorRecovery("Type specifier missing in parameters",parameter_list,"ID");
+                                        //printErrorRecovery("Type specifier missing in parameters",parameter_list,"ID");
+                                        printError("Type specifier missing in parameters");
                                 }
                 ;
 
 compound_statement: LCURL create_scope statements RCURL
                                 {
-                                        setValue(compound_statement,"{"+popValue(statements)+"\n}");
-                                        printRuleAndCode(compound_statement,"LCURL statements RCURL");
                                         exitScope();
                                 }
                 |       LCURL create_scope RCURL
                                 {
-                                        setValue(compound_statement,"{}");
-                                        printRuleAndCode(compound_statement,"LCURL RCURL");
                                         exitScope();
                                 } 
                 |       LCURL create_scope error statements RCURL
                                 {
-                                        setValue(compound_statement,"{"+popValue(statements)+"\n}");
-                                        printRuleAndCode(compound_statement,"LCURL statements RCURL");
                                         exitScope();
                                 }     
                 |       LCURL create_scope error RCURL
                                 {
-                                        setValue(compound_statement,"{}");
-                                        printRuleAndCode(compound_statement,"LCURL RCURL");
                                         exitScope();
                                 }    
                 ;
@@ -339,77 +287,41 @@ declaration_list : declaration_list COMMA ID
                 ;   
 
 statements: statement
-                                {
-                                        setValue(statements,popValue(statement));
-                                        printRuleAndCode(statements,"statement");
-                                }
+                                {}
                 |       statements statement
-                                {
-                                        setValue(statements,popValue(statements)+popValue(statement));
-                                        printRuleAndCode(statements,"statements statement");
-                                }
+                                {}
                 |       statements error
-                                {
-                                        setValue(statements,popValue(statements));
-                                }                
+                                {}                
                 ;
 
-statement: var_declaration 
-                                {
-                                        setValue(statement,"\t"+popValue(var_declaration));
-                                        printRuleAndCode(statement,"var_declaration");
-                                }
+statement: var_declaration
                 |       expression_statement
-                                {
-                                        setValue(statement,"\t"+popValue(expression_statement));
-                                        printRuleAndCode(statement,"expression_statement");
-                                }
                 |       compound_statement
-                                {
-                                        setValue(statement,popValue(compound_statement));
-                                        printRuleAndCode(statement,"compound_statement");
-                                }
                 |       func_definition
                                 {
-                                        setValue(statement,popValue(func_definition));
-                                        printErrorRecovery("Invalid scoping of function", statement, "func_definition");
+                                        //printErrorRecovery("Invalid scoping of function", statement, "func_definition");
+                                        printError("Invalid scoping of function");
                                 }
                 |       func_declaration
                                 {
-                                        setValue(statement,popValue(func_declaration));
-                                        printErrorRecovery("Invalid scoping of function", statement, "func_declaration");
+                                        //printErrorRecovery("Invalid scoping of function", statement, "func_declaration");
+                                        printError("Invalid scoping of function");
                                 }
                 |       FOR LPAREN expression_statement expression_statement expression RPAREN statement
-                                {
-                                        setValue(statement,(string("for")+"("+popValue(expression_statement)+popValue(expression_statement)+popValue(expression)+")\n"+popValue(statement)));
-                                        printRuleAndCode(statement,"FOR LPAREN expression_statement expression_statement expression RPAREN statement");
-                                }
+                                {}
                 |       IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
-                                {
-                                        setValue(statement,(string("if")+"("+popValue(expression)+")\n"+popValue(statement)));
-                                        printRuleAndCode(statement,"IF LPAREN expression RPAREN statement");
-                                }
+                                {}
                 |       IF LPAREN expression RPAREN statement ELSE statement
-                                {
-                                        setValue(statement,(string("if")+"("+popValue(expression)+")\n"+popValue(statement)+"\nelse\n"+popValue(statement)));
-                                        printRuleAndCode(statement,"IF LPAREN expression RPAREN statement ELSE statement");
-                                }
+                                {}
                 |       WHILE LPAREN expression RPAREN statement
-                                {
-                                        setValue(statement,(string("while")+"("+popValue(expression)+")\n"+popValue(statement)));
-                                        printRuleAndCode(statement,"WHILE LPAREN expression RPAREN statement");
-                                }
+                                {}
                 |       PRINTLN LPAREN ID RPAREN SEMICOLON
                                 {
                                         checkExistance($3);
-                                        setValue(statement,"\tprintf("+$3->getName()+")"+";");
-                                        printRuleAndCode(statement,"PRINTLN LPAREN ID RPAREN SEMICOLON");
                                 }
                 |       RETURN expression SEMICOLON
                                 {
                                         checkFuncReturnType($2);
-                                        setValue(statement,"\t"+string("return ")+popValue(expression)+";");
-                                        printRuleAndCode(statement,"RETURN expression SEMICOLON");
                                 }
                 |       RETURN SEMICOLON
                                 {
@@ -417,41 +329,33 @@ statement: var_declaration
                                                 EXTRA RULE ADDED 
                                         ***/
                                         checkFuncReturnType();
-                                        setValue(statement,"\t"+string("return ")+";");
-                                        printRuleAndCode(statement,"RETURN SEMICOLON");
                                 }
                 |       IF LPAREN error RPAREN statement %prec LOWER_THAN_ELSE
                                 {
-                                        setValue(statement,(string("if")+"("+")\n"+popValue(statement)));
-                                        printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN RPAREN statement");
+                                        //printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN RPAREN statement");
+                                        printError("Invalid expression inside conditional if statement");
                                 }
                 |       IF LPAREN error RPAREN statement ELSE statement
                                 {
-                                        setValue(statement,(string("if")+"("+")\n"+popValue(statement)+"\nelse\n"+popValue(statement)));
-                                        printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN RPAREN statement ELSE statement");
+                                        //printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN RPAREN statement ELSE statement");
+                                        printError("Invalid expression inside conditional if statement");
                                 }
                 |       error ELSE statement
                                 {
-                                        setValue(statement,"else"+popValue(statement));
-                                        printErrorRecovery("Else conditional statement without an if",statement,"ELSE statement");
+                                        //printErrorRecovery("Else conditional statement without an if",statement,"ELSE statement");
+                                        printError("Else conditional statement without an if");
                                 }
                 |       RETURN expression error		
                                 {
-                                        setValue(statement,"return "+popValue(expression)+"");
-                                        printErrorRecovery("; missing",statement,"RETURN expression");
+                                        //printErrorRecovery("; missing",statement,"RETURN expression");
+                                        printError("; missing");
                                 }
                 ;
 
 expression_statement: SEMICOLON
-                                {
-                                        setValue(expression_statement,";");
-                                        printRuleAndCode(expression_statement,"SEMICOLON");
-                                }
+                                {}
                 |       expression SEMICOLON
-                                {
-                                        setValue(expression_statement,popValue(expression)+";");
-                                        printRuleAndCode(expression_statement,"expression SEMICOLON");
-                                }
+                                {}
                 ;
 
 variable: ID            
@@ -465,94 +369,52 @@ variable: ID
                 ;
 
 expression: logic_expression
-                                {
-                                        setValue(expression,popValue(logic_expression));
-                                        printRuleAndCode(expression,"logic_expression");
-                                }
                 |       variable ASSIGNOP logic_expression
                                 {
                                         $$ = getAssignExpVal($1, $3);
-                                        setValue(expression,popValue(variable)+"="+popValue(logic_expression));
-                                        printRuleAndCode(expression,"variable ASSIGNOP logic_expression");
                                 }
                 ;
 
 logic_expression: rel_expression
-                                {
-                                        setValue(logic_expression,popValue(rel_expression));
-                                        printRuleAndCode(logic_expression,"rel_expression");
-                                }
                 |       rel_expression LOGICOP rel_expression
                                 {
                                         $$ = getLogicOpVal($1,$2,$3);
-                                        string r2 = popValue(rel_expression);
-                                        string r1 = popValue(rel_expression);
-                                        setValue(logic_expression,r1+$2->getName()+r2);
-                                        printRuleAndCode(logic_expression,"rel_expression LOGICOP rel_expression");
                                 }
                 ;
 
 rel_expression: simple_expression
-                                {
-                                        setValue(rel_expression,popValue(simple_expression));
-                                        printRuleAndCode(rel_expression,"simple_expression");
-                                }
                 |       simple_expression RELOP simple_expression
                                 {
                                         $$ = getRelOpVal($1,$2,$3);
-                                        string s2 = popValue(simple_expression);
-                                        string s1 = popValue(simple_expression);
-                                        setValue(rel_expression,s1+$2->getName()+s2);
-                                        printRuleAndCode(rel_expression,"simple_expression RELOP simple_expression");
                                 }
                 ;
 
 simple_expression: term
-                                {
-                                        setValue(simple_expression,popValue(term));
-                                        printRuleAndCode(simple_expression,"term");
-                                }
                 |       simple_expression ADDOP term
                                 {
                                         $$ = getAddOpVal($1,$2,$3);
-                                        setValue(simple_expression,popValue(simple_expression)+$2->getName()+popValue(term));
-                                        printRuleAndCode(simple_expression,"simple_expression ADDOP term");
                                 }
                 ;
 
 term:	unary_expression
-                                {
-                                        setValue(term,popValue(unary_expression));
-                                        printRuleAndCode(term,"unary_expression");
-                                }
                 |       term MULOP unary_expression
                                 {
                                         SymbolInfo* s = getMulOpVal($1,$2,$3);
                                         if(s!=nullptr){
                                                 $$ = s;
                                         }
-                                        setValue(term,popValue(term)+$2->getName()+popValue(unary_expression));
-                                        printRuleAndCode(term,"term MULOP unary_expression");
                                 }
                 ;
 
 unary_expression: ADDOP unary_expression
                                 {
                                         $$ = getUnaryOpVal($1,$2);
-                                        setValue(unary_expression,$1->getName()+popValue(unary_expression));
-                                        printRuleAndCode(unary_expression,"ADDOP unary_expression");
                                 }
                 |       NOT unary_expression
                                 {
                                         $$ = getNotOpVal($2);
-                                        setValue(unary_expression,"!"+popValue(unary_expression));
-                                        printRuleAndCode(unary_expression,"NOT unary_expression");
                                 }
                 |       factor
-                                {
-                                        setValue(unary_expression,popValue(factor));
-                                        printRuleAndCode(unary_expression,"factor");
-                                }
                 ;
 
 factor: variable        
