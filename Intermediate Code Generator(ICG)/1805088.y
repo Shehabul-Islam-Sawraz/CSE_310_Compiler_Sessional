@@ -254,10 +254,6 @@ create_scope:
                                 }
                 ;
 var_declaration: type_specifier declaration_list SEMICOLON
-                                {
-                                        setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+ ";");
-                                        printRuleAndCode(var_declaration,"type_specifier declaration_list SEMICOLON");
-                                }
                 |       type_specifier declaration_list error SEMICOLON
                                 {
                                         /**
@@ -266,64 +262,50 @@ var_declaration: type_specifier declaration_list SEMICOLON
                                                 int x[10]-y;
                                                 int x[10.5]-y;
                                         **/ 
-                                        setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+";");
-                                        printErrorRecovery("Invalid variable declaration",var_declaration,"type_specifier declaration_list SEMICOLON");
+                                        //printErrorRecovery("Invalid variable declaration",var_declaration,"type_specifier declaration_list SEMICOLON");
+                                        printError("Invalid variable declaration");
                                 }
                 ;
 
 type_specifier : INT
                                 {
                                         $$ = getSymbolInfoOfType(INT_TYPE);
-                                        setValue(type_specifier,"int");
-                                        printRuleAndCode(type_specifier,"INT");
                                 }
                 |       FLOAT
                                 {
                                         $$ = getSymbolInfoOfType(FLOAT_TYPE);
-                                        setValue(type_specifier,"float");
-                                        printRuleAndCode(type_specifier,"FLOAT");
                                 }
                 |       VOID
                                 {
                                         $$ = getSymbolInfoOfType(VOID_TYPE);
-                                        setValue(type_specifier,"void");
-                                        printRuleAndCode(type_specifier,"VOID");
                                 }
                 ;
 
 declaration_list : declaration_list COMMA ID
                                 {
                                         insertVar($3);
-                                        setValue(declaration_list, popValue(declaration_list)+","+$3->getName());
-                                        printRuleAndCode(declaration_list,"declaration_list COMMA ID");
                                 }
                 |       declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
                                 {
                                         insertArr($3,$5);
-                                        setValue(declaration_list,popValue(declaration_list)+","+$3->getName()+"["+$5->getName()+"]");
-                                        printRuleAndCode(declaration_list,"declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
                                 }
                 |       ID
                                 {
                                         insertVar($1);
-                                        setValue(declaration_list,$1->getName());
-                                        printRuleAndCode(declaration_list,"ID");
                                 }
                 |       ID LTHIRD CONST_INT RTHIRD
                                 {
                                         insertArr($1, $3);
-                                        setValue(declaration_list,$1->getName()+"["+$3->getName()+"]");
-                                        printRuleAndCode(declaration_list,"ID LTHIRD CONST_INT RTHIRD");
                                 }
                 |       ID LTHIRD error RTHIRD
                                 {
-                                        setValue(declaration_list,$1->getName()+"["+"]");
-                                        printErrorRecovery("Constant integer type array size must be provided",declaration_list,"ID LTHIRD RTHIRD");
+                                        //printErrorRecovery("Constant integer type array size must be provided",declaration_list,"ID LTHIRD RTHIRD");
+                                        printError("Constant integer type array size must be provided");
                                 }
                 |       declaration_list COMMA ID LTHIRD error RTHIRD
                                 {
-                                        setValue(declaration_list,popValue(declaration_list)+","+$3->getName()+"["+"]");
-                                        printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD RTHIRD");
+                                        //printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD RTHIRD");
+                                        printError("Constant integer type array size must be provided");
                                 }
                 |       declaration_list error COMMA ID
                                 {
@@ -332,8 +314,8 @@ declaration_list : declaration_list COMMA ID
                                                 int x-y,z;
                                         **/ 
                                         insertVar($4);
-                                        setValue(declaration_list, popValue(declaration_list)+","+$4->getName());
-                                        printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list COMMA ID");
+                                        //printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list COMMA ID");
+                                        printError("Invalid declaration of variable/array");
                                 }
                 |       declaration_list error COMMA ID LTHIRD CONST_INT RTHIRD
                                 {
@@ -342,8 +324,8 @@ declaration_list : declaration_list COMMA ID
                                                 int x-y,z[10];
                                         **/ 
                                         insertArr($4,$6);
-                                        setValue(declaration_list,popValue(declaration_list)+","+$4->getName()+"["+$6->getName()+"]");
-                                        printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
+                                        //printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
+                                        printError("Invalid declaration of variable/array");
                                 }
                 |       declaration_list error COMMA ID LTHIRD error RTHIRD
                                 {
@@ -351,10 +333,8 @@ declaration_list : declaration_list COMMA ID
                                                 To handle errors like :
                                                 int x-y,z[10.5];
                                         **/
-                                        //string s1 = popValue(error);
-                                        //string s2 = popValue(error);
-                                        setValue(declaration_list,popValue(declaration_list)+","+$4->getName()+"["+"]");
-                                        printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD RTHIRD");
+                                        //printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD RTHIRD");
+                                        printError("Constant integer type array size must be provided");
                                 }
                 ;   
 
@@ -477,14 +457,10 @@ expression_statement: SEMICOLON
 variable: ID            
                                 {
                                         $$ = getVariable($1);
-                                        setValue(variable,$1->getName());
-                                        printRuleAndCode(variable,"ID");
                                 }
                 |       ID LTHIRD expression RTHIRD
                                 {
                                         $$ = getArrVar($1,$3);
-                                        setValue(variable,$1->getName()+"["+popValue(expression)+"]");
-                                        printRuleAndCode(variable,"ID LTHIRD expression RTHIRD");
                                 }
                 ;
 
@@ -580,97 +556,67 @@ unary_expression: ADDOP unary_expression
                 ;
 
 factor: variable        
-                                {
-                                        setValue(factor,popValue(variable));
-                                        printRuleAndCode(factor,"variable");
-                                }
                 |       ID LPAREN argument_list RPAREN
                                 {
                                         SymbolInfo* s = getFuncCallValue($1);
                                         if(s!=nullptr){
                                                 $$ = s;
                                         }
-                                        setValue(factor,$1->getName()+"("+popValue(argument_list)+")");
-                                        printRuleAndCode(factor,"ID LPAREN argument_list RPAREN");
                                 }
                 |       LPAREN expression RPAREN
                                 {
                                         $$ = $2;
-                                        setValue(factor,"("+popValue(expression)+")");
-                                        printRuleAndCode(factor,"LPAREN expression RPAREN");
                                 }
                 |       CONST_INT
                                 {
                                         $$ = getConstValue($1,INT_TYPE);
-                                        setValue(factor,$1->getName());
-                                        printRuleAndCode(factor,"CONST_INT");
                                 }
                 |       CONST_FLOAT
                                 {
                                         $$ = getConstValue($1,FLOAT_TYPE);
-                                        setValue(factor,$1->getName());
-                                        printRuleAndCode(factor,"CONST_FLOAT");
                                 }
                 |       variable INCOP %prec POSTFIX_INCOP
                                 {
                                         $$ = getINDECOpVal($1,"++","post");
-                                        setValue(factor,popValue(variable)+"++");
-                                        printRuleAndCode(factor,"variable INCOP");
                                 }
                 |       variable DECOP %prec POSTFIX_DECOP
                                 {
                                         $$ = getINDECOpVal($1,"--","post");
-                                        setValue(factor,popValue(variable)+"--");
-                                        printRuleAndCode(factor,"variable DECOP");
                                 }
                 |       INCOP variable %prec PREFIX_INCOP
                                 {
                                         $$ = getINDECOpVal($2,"++","pre");
-                                        setValue(factor,"++"+popValue(variable));
-                                        printRuleAndCode(factor,"variable INCOP");
                                 }
                 |       DECOP variable %prec PREFIX_DECOP
                                 {
                                         $$ = getINDECOpVal($2,"--","pre");
-                                        setValue(factor,"--"+popValue(variable));
-                                        printRuleAndCode(factor,"variable DECOP");
                                 }
                 |       ID LPAREN argument_list error
                                 {
-                                        setValue(factor,$1->getName()+"("+popValue(argument_list));
-                                        printErrorRecovery("Right parentheses missing",factor,"ID LPAREN argument_list");
+                                        //printErrorRecovery("Right parentheses missing",factor,"ID LPAREN argument_list");
+                                        printError("Right parentheses missing");
                                         clearFunctionParam();
                                 }
                 |       LPAREN expression error
                                 {
-                                        setValue(factor,"("+popValue(expression)+"");
-                                        printErrorRecovery("Right parentheses missing",factor,"LPAREN expression");
+                                        //printErrorRecovery("Right parentheses missing",factor,"LPAREN expression");
+                                        printError("Right parentheses missing");
                                 }
                 ;
 
 argument_list: arguments
-                                {
-                                        setValue(argument_list,popValue(arguments));
-                                        printRuleAndCode(argument_list,"arguments");
-                                }
+                                {}
                 |       
-                                {
-                                        setValue(argument_list,"");
-                                        printRuleAndCode(argument_list,"");
-                                }
+                                {}
                 ;
 
 arguments: arguments COMMA logic_expression
                                 {
                                         paramType.push_back($3->getVarType());
-                                        setValue(arguments,popValue(arguments)+", "+popValue(logic_expression));
-                                        printRuleAndCode(arguments,"arguments COMMA logic_expression");
                                 }
                 |       logic_expression
                                 {
                                         paramType.push_back($1->getVarType());
-                                        setValue(arguments,popValue(logic_expression));
-                                        printRuleAndCode(arguments,"logic_expression");
                                 }
                 ;
 %%

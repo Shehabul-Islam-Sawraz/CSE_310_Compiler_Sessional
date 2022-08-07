@@ -26,12 +26,13 @@ private:
     string funcRetType; // Stores return type of function
     vector<string> paramType; // Stores the types of the parameters
     size_t arrSize; // Stores size of the array
-    size_t arrIndex; // Stores which index we are accessing
+    //size_t arrIndex; // Stores which index we are accessing
     int defInt = 0; // Set default value to 0 to a INT_TYPE variable until some value is assigned into it
     float defFloat = 0.0; // Set default value to 0.0 to a FLOAT_TYPE variable until some value is assigned into it
 public:
-    vector<int> intValues; // Stores array values if array is INT_TYPE. Default value is set to 0
-    vector<float> floatValues; // Stores array values if array is FLOAT_TYPE. Default value is set to 0.0
+    //vector<int> intValues; // Stores array values if array is INT_TYPE. Default value is set to 0
+    //vector<float> floatValues; // Stores array values if array is FLOAT_TYPE. Default value is set to 0.0
+    string code;
     SymbolInfo(string name,string type){
         this->name = name;
         this->type = type;
@@ -77,12 +78,12 @@ public:
 
     void setVarType(string type){
         this->varType = type;
-        if (type == INT_TYPE){
-            intValues.push_back(0);
-        }   
-		else if (type == FLOAT_TYPE){
-            floatValues.push_back(0);
-        }
+        // if (type == INT_TYPE){
+        //     intValues.push_back(0);
+        // }   
+		// else if (type == FLOAT_TYPE){
+        //     floatValues.push_back(0);
+        // }
     }
 
     string getVarType(){
@@ -121,16 +122,16 @@ public:
 		this->arrSize = arrSize;
 	}
 
-    size_t getArrIndex() {
-		return isArray() ? arrIndex : 0;
-	}
+    // size_t getArrIndex() {
+	// 	return isArray() ? arrIndex : 0;
+	// }
 
-	void setArrIndex(size_t arrIndex) {
-		if (decType!=ARRAY){
-            return;
-        }
-		this->arrIndex = arrIndex;
-	}
+	// void setArrIndex(size_t arrIndex) {
+	// 	if (decType!=ARRAY){
+    //         return;
+    //     }
+	// 	this->arrIndex = arrIndex;
+	// }
 
     SymbolInfo* getPrevious(){
         return this->previous;
@@ -142,6 +143,14 @@ public:
 
     SymbolInfo* getNext(){
         return this->next;
+    }
+
+    void setCode(string code){
+        this->code = code;
+    }
+
+    string getCode(){
+        return this->code;
     }
 
     bool isVariable(){

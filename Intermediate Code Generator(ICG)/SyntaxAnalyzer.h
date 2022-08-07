@@ -167,25 +167,28 @@ SymbolInfo* getSymbolInfoOfType(string type){
 // }
 
 void printError(string error_msg){
+	if(error_msg==""){
+		error_msg = "Syntax error";
+	}
 	fprintf(errorout,"Error at line %d: %s\n",line_count, error_msg.data());
 	syntax_error_count++;
 }
 
-void printErrorRecovery(string error_msg, NONTERMINAL_TYPE nonterminal, string rule){
-	if(error_msg==""){
-		printError("Syntax error");
-	}
-	else{
-		printError(error_msg);
-	}
-	errorRule = true;
-	if(error_msg!=""){
-		printRuleAndCode(nonterminal, rule);
-	}
-	errorRule = false;
-	popValue(error);
-	lookAheadBuf.clear();
-}
+// void printErrorRecovery(string error_msg, NONTERMINAL_TYPE nonterminal, string rule){
+// 	if(error_msg==""){
+// 		printError("Syntax error");
+// 	}
+// 	else{
+// 		printError(error_msg);
+// 	}
+// 	errorRule = true;
+// 	if(error_msg!=""){
+// 		printRuleAndCode(nonterminal, rule);
+// 	}
+// 	errorRule = false;
+// 	popValue(error);
+// 	lookAheadBuf.clear();
+// }
 
 void printWarning(string error_msg){
 	fprintf(errorout,"Warning at line %d: %s\n",line_count, error_msg.data());
