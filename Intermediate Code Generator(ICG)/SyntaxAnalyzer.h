@@ -1,5 +1,5 @@
-#include "SymbolTable.h"
 #include<stack>
+#include "IntermediateCodeGenerator.h"
 
 #define INFINITY_INT  numeric_limits<int>::max();
 #define INFINITY_FLOAT numeric_limits<float>::infinity()
@@ -22,36 +22,8 @@ bool errorRule = false;
 bool isReturnedFromFunction = false;
 string lookAheadBuf;
 
-ScopeTable* scope = nullptr; // Have to declare it in ICG header file
-SymbolTable* symbolTable = new SymbolTable(); // Have to declare it in ICG header file
-
 int yyparse();
 int yylex();
-
-// string ruleName[] = {"start", "program", "unit", "func_declaration", "func_definition", "parameter_list",
-//                            "compound_statement", "var_declaration", "type_specifier", "declaration_list", "statements",
-//                            "statement", "expression_statement", "variable", "expression", "logic_expression",
-//                            "rel_expression", "simple_expression", "term", "unary_expression", "factor", "argument_list",
-//                            "arguments"};
-
-// enum NONTERMINAL_TYPE {
-// 	start = 0, program, unit, func_declaration, func_definition,
-// 	parameter_list, compound_statement, var_declaration, type_specifier,
-// 	declaration_list, statements, statement, expression_statement,
-// 	variable, expression, logic_expression, rel_expression, simple_expression,
-// 	term, unary_expression, factor, argument_list, arguments, error
-// };
-
-// bool replaceAll(string &source, string toReplace, string replaceBy) {
-// 	if (source.find(toReplace, 0) == string::npos){
-// 		return false;
-// 	}
-// 	for (string::size_type i = 0; (i = source.find(toReplace, i)) != string::npos;) {
-// 		source.replace(i, toReplace.length(), replaceBy);
-// 		i += replaceBy.length();
-// 	}
-// 	return true;
-// }
 
 // string formatCode(string code){
 // 	string formattedCode = code;
@@ -86,39 +58,6 @@ int yylex();
 // 	return formattedCode;
 // }
 
-uint32_t hashValue(string str){
-    uint32_t hash = 0;
-    for(int c:str)
-        hash = c + (hash * 64) + (hash *65536) - hash;
-    return hash;
-}
-
-// class NonTerminalHandler
-// {
-// private:
-// 	stack<string> nonterminals[NONTERMINAL_TYPE::error +1];
-// public:
-// 	string getValue(NONTERMINAL_TYPE nonterminal){
-// 		if(nonterminals[nonterminal].empty()){
-// 			return "";
-// 		}
-// 		return nonterminals[nonterminal].top();
-// 	}
-// 	string popValue(NONTERMINAL_TYPE nonterminal){
-// 		if(nonterminals[nonterminal].empty()){
-// 			return "";
-// 		}
-// 		string str = nonterminals[nonterminal].top();
-// 		nonterminals[nonterminal].pop();
-// 		return str;
-// 	}
-// 	void setValue(NONTERMINAL_TYPE nonterminal, string value){
-// 		nonterminals[nonterminal].push(value);
-// 	}
-// };
-
-// NonTerminalHandler nonTerminalHandler;
-
 void clearFunctionParam(){
 	paramType.clear();
 	parameters.clear();
@@ -139,32 +78,15 @@ SymbolInfo* insertIntoSymbolTable(SymbolInfo* symbol){
         scope = symbolTable->createScopeTable(NoOfBuckets);
     }
     scope->insertSymbol(symbol->getName(), symbol->getType(),(int)(hashValue(symbol->getName())%NoOfBuckets), symbol->getVarType(), symbol->getDecType());
-	return symbolTable->lookUp(symbol->getName(), (int)(hashValue(symbol->getName())%NoOfBuckets));
+	SymbolInfo *temp = symbolTable->lookUp(symbol->getName(), (int)(hashValue(symbol->getName())%NoOfBuckets));
+	temp->setScopeID(scope->getId());
+	return temp;
 }
 
 SymbolInfo* getSymbolInfoOfType(string type){
 	variableType = type;
 	return new SymbolInfo(variableType,variableType);
 }
-
-// void setValue(NONTERMINAL_TYPE nonterminal, string value){
-// 	nonTerminalHandler.setValue(nonterminal,value);
-// }
-
-// string popValue(NONTERMINAL_TYPE nonterminal) {
-// 	string val = nonTerminalHandler.popValue(nonterminal);
-// 	//val = (isalnum(val[0]) ? " " : "") + val + (isalnum(val[val.length() - 1]) ? " " : "");
-// 	//return val + ((val[val.length() - 1] == ' ') ? "" : " ");
-// 	return val;
-// }
-
-// void printRuleAndCode(NONTERMINAL_TYPE nonterminal, string rule){
-// 	fprintf(logout,"Line %d: %s : %s\n",line_count, ruleName[nonterminal].data(), rule.data());
-// 	if(!errorRule){
-// 		fprintf(parserout,"Line %d: %s : %s\n",line_count, ruleName[nonterminal].data(), rule.data());
-// 	}
-// 	fprintf(logout,"%s\n", formatCode(nonTerminalHandler.getValue(nonterminal)).data());
-// }
 
 void printError(string error_msg){
 	if(error_msg==""){
@@ -174,22 +96,6 @@ void printError(string error_msg){
 	syntax_error_count++;
 }
 
-// void printErrorRecovery(string error_msg, NONTERMINAL_TYPE nonterminal, string rule){
-// 	if(error_msg==""){
-// 		printError("Syntax error");
-// 	}
-// 	else{
-// 		printError(error_msg);
-// 	}
-// 	errorRule = true;
-// 	if(error_msg!=""){
-// 		printRuleAndCode(nonterminal, rule);
-// 	}
-// 	errorRule = false;
-// 	popValue(error);
-// 	lookAheadBuf.clear();
-// }
-
 void printWarning(string error_msg){
 	fprintf(errorout,"Warning at line %d: %s\n",line_count, error_msg.data());
 	warning_count++;
@@ -198,12 +104,9 @@ void printWarning(string error_msg){
 void yyerror(const char *s) {
 	fprintf(errorout,"Error at line %d: %s\n",line_count, "Syntax error");
 	syntax_error_count++;
-	//cout << "Before Look ahead buf: " << lookAheadBuf << endl;
-	//cout << "Error value: " << nonTerminalHandler.getValue(error) << endl;
 	setValue(error, popValue(error)+" "+lookAheadBuf);
 	errorRule = true;
 	lookAheadBuf = yytext;
-	//cout << "After Look ahead buf: " << lookAheadBuf << endl;
 }
 
 SymbolInfo* insertVar(SymbolInfo* var){
@@ -220,6 +123,7 @@ SymbolInfo* insertVar(SymbolInfo* var){
 			SymbolInfo* temp = insertIntoSymbolTable(var);
 			temp->setDecType(VARIABLE);
 			temp->setVarType(variableType);
+			addVarInDataSegment(temp->getName());
 			return temp;
 		}
 	}
@@ -242,17 +146,19 @@ void insertFunc(SymbolInfo* func, SymbolInfo* retType){
 	SymbolInfo* temp = insertIntoSymbolTable(func);
 	temp->setFuncRetType(retType->getName());
 	temp->setparamType(paramType);
+	temp->setFuncRetLabel(getLabelForFunction(temp->getName()));
 }
 
 void insertArr(SymbolInfo *sym, SymbolInfo *index) {
 	SymbolInfo *arr = insertVar(sym);
 	arr->setDecType(ARRAY);
 	arr->setArrSize(static_cast<size_t>(atoi(index->getName().data()))); // Set the size of the array as defined size
-	int l = arr->getArrSize();
-	for(int i=0;i<l;i++){
-		arr->intValues.push_back(0);
-		arr->floatValues.push_back(0);
-	}
+	// int l = arr->getArrSize();
+	// for(int i=0;i<l;i++){
+	// 	arr->intValues.push_back(0);
+	// 	arr->floatValues.push_back(0);
+	// }
+	addArrInDataSegment(arr->getName());
 }
 
 void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){

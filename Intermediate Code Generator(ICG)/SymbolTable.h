@@ -27,8 +27,11 @@ private:
     vector<string> paramType; // Stores the types of the parameters
     size_t arrSize; // Stores size of the array
     //size_t arrIndex; // Stores which index we are accessing
-    int defInt = 0; // Set default value to 0 to a INT_TYPE variable until some value is assigned into it
-    float defFloat = 0.0; // Set default value to 0.0 to a FLOAT_TYPE variable until some value is assigned into it
+    // int defInt = 0; // Set default value to 0 to a INT_TYPE variable until some value is assigned into it
+    // float defFloat = 0.0; // Set default value to 0.0 to a FLOAT_TYPE variable until some value is assigned into it
+    int scopeId = -1;
+    string funcRetLabel = "";
+
 public:
     //vector<int> intValues; // Stores array values if array is INT_TYPE. Default value is set to 0
     //vector<float> floatValues; // Stores array values if array is FLOAT_TYPE. Default value is set to 0.0
@@ -121,6 +124,22 @@ public:
         }
 		this->arrSize = arrSize;
 	}
+
+    string getScopeID() {
+		return to_string(this->scopeId);
+	}
+
+	void setScopeID(int scopeId) {
+		this->scopeId = scopeId;
+	}
+
+    void setFuncRetLabel(string label){
+        this->funcRetLabel = label;
+    }
+
+    string getFuncRetLabel(){
+        return this->funcRetLabel;
+    }
 
     // size_t getArrIndex() {
 	// 	return isArray() ? arrIndex : 0;
@@ -222,6 +241,7 @@ private:
     int noOfChild;
     int noOfBuckets;
     string scopeName;
+    int id;
 public:
     ScopeTable(int noOfBuckets){
         this->scopeTable = new SymbolInfo*[noOfBuckets];
@@ -231,6 +251,7 @@ public:
         this->noOfChild = 0;
         this->parentScope = nullptr;
         this->noOfBuckets = noOfBuckets;
+        this->id = 0;
     }
 
     void setParentScope(ScopeTable* parentScope){
@@ -255,6 +276,23 @@ public:
 
     void setScopeName(string scopeName){
         this->scopeName = scopeName;
+    }
+
+    void setId(int id){
+        this->id = id;
+    }
+
+    void setId(){
+        if(this->parentScope==nullptr){
+            this->id = 0;
+        }
+        else{
+            this->id = this->parentScope->getId()+1;
+        }
+    }
+
+    int getId(int id){
+        return this->id;
     }
 
     SymbolInfo* lookUpScope(string name, int index){
@@ -393,6 +431,7 @@ public:
             scope->setParentScope(nullptr);
             scope->setScopeName(to_string(this->noOfChild + 1));
             this->noOfChild=this->noOfChild;
+            scope->setId();
         }
         else{
             scope->setParentScope(this->currentScope);
@@ -400,6 +439,7 @@ public:
             scope->setScopeName(sc.append(to_string(this->currentScope->getChildNo() + 1)));
             this->currentScope->setChildNo(this->currentScope->getChildNo() + 1);
             this->currentScope = scope;
+            scope->setId();
         }
         //cout << "New ScopeTable with id " << this->currentScope->getScopeName() << " created" << endl;
         return scope;

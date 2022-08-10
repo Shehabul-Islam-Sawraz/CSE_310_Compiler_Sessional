@@ -14,7 +14,7 @@
 
 %token <symbolInfo>ID CONST_INT CONST_FLOAT CONST_CHAR ADDOP MULOP LOGICOP RELOP BITOP
 
-%type <symbolInfo>type_specifier expression logic_expression rel_expression simple_expression term unary_expression factor variable
+%type <symbolInfo>type_specifier expression logic_expression rel_expression simple_expression term unary_expression factor variable program unit var_declaration func_declaration func_definition parameter_list compound_statement declaration_list statements statement expression_statement argument_list arguments
 
 %left COMMA
 %right ASSIGNOP
