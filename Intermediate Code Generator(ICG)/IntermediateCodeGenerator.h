@@ -154,13 +154,27 @@ string newTemp(){
     return temp;
 }
 
+string setSIForArray(string reg, string offset){
+    string code = "";
+    code += "MOV " + reg + ", " + GET_ASM_VAR_NAME(offset) + NEWLINE;
+    code += "ADD " + reg + ", " + reg + NEWLINE;
+    return code;
+}
+
+string arrayMemoryToReg(string command, string reg, string arrayName, string offset){
+    string code = "";
+    code += setSIForArray("SI", offset);
+    code += command + " " + reg + ", " + GET_ASM_VAR_NAME(arrayName) + "[SI]" + NEWLINE;
+    return code;
+}
+
 string memoryToReg(string command, string reg, string memory){
     return command + " " + reg + ", " + GET_ASM_VAR_NAME(memory) + NEWLINE;
 }
 
 string operatorToReg(string command, string reg, SymbolInfo* sym){
     if(sym->isArray()){
-
+        return arrayMemoryToReg(command, reg, sym->getName(), sym->getArrIndex());
     }
     else{
         return memoryToReg(command, reg, sym->getName());
