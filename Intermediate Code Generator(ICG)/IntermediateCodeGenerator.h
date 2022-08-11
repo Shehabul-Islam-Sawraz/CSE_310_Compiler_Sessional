@@ -3,9 +3,12 @@
 
 #define DEFINE_WORD " DW "
 #define ARRAY_DUP " DUP(0)"
+#define NEWLINE string("\r\n")
 
 string codesegment,datasegment;
 ofstream asmFile;
+
+int tempCount=0,maxTempCount=-1;
 
 ScopeTable* scope = nullptr; // Have to declare it in ICG header file
 SymbolTable* symbolTable = new SymbolTable(); // Have to declare it in ICG header file
@@ -136,4 +139,46 @@ void init_model(){
     setValue(code_segment, "\r\n.CODE\r\n");
     setValue(init_data, "\r\nMOV AX,@DATA\r\n
                             MOV DS,AX\r\n");
+}
+
+string newTemp(){
+    string temp = "t";
+    char c[3];
+    sprintf(c,"%d", tempCount);
+    temp += c;
+    if(tempCount>maxTempCount){
+        maxTempCount++;
+        addVarInDataSegment(temp);
+    }
+    tempCount++;
+    return temp;
+}
+
+string memoryToReg(string command, string reg, string memory){
+    return command + " " + reg + ", " + GET_ASM_VAR_NAME(memory) + NEWLINE;
+}
+
+string operatorToReg(string command, string reg, SymbolInfo* sym){
+    if(sym->isArray()){
+
+    }
+    else{
+        return memoryToReg(command, reg, sym->getName());
+    }
+}
+
+string addAddOpAsmCode(string op, string tempVar, SymbolInfo* left, SymbolInfo* right){
+    if(op=="+"){
+        op = "ADD";
+    }
+    else if(op=="-"){
+        op = "SUB";
+    }
+
+    string code = "";
+    string temp = GET_ASM_VAR_NAME(tempVar);
+    code += operatorToReg("MOV", "AX", left);
+    code += operatorToReg(op, "AX", right);
+    code += "MOV" + temp + ", AX" + NEWLINE;
+    return code;
 }

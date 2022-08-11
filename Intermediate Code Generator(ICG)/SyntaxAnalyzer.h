@@ -354,55 +354,15 @@ SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
 		return nullValue();
 	}
 	string addop = op->getName();
-	SymbolInfo* opVal = new SymbolInfo("","");
+	SymbolInfo* opVal = new SymbolInfo(newTemp(),TEMPORARY_TYPE);
 	if(left->getVarType()==FLOAT_TYPE || right->getVarType()==FLOAT_TYPE){
 		opVal = getConstValue(opVal,FLOAT_TYPE);
 	}
 	else{
 		opVal = getConstValue(opVal,INT_TYPE);
 	}
-	if(addop=="+"){
-		if(left->getVarType()==FLOAT_TYPE){
-			if(right->getVarType()==INT_TYPE){
-				opVal->fltValue() = left->fltValue() + right->intValue();
-			}
-			else{
-				opVal->fltValue() = left->fltValue() + right->fltValue();
-			}
-		}
-		else if(right->getVarType()==FLOAT_TYPE){
-			if (left->getVarType()==INT_TYPE) {
-				opVal->fltValue() = left->intValue() + right->fltValue();
-			} else {
-				opVal->fltValue() = left->fltValue() + right->fltValue();
-			}
-		}
-		else if (right->getVarType()==INT_TYPE && left->getVarType()==INT_TYPE){
-			opVal->setVarType(INT_TYPE);
-			opVal->intValue() = left->intValue()+right->intValue();
-		}
-	}
-	else if(addop=="-"){
-		if(left->getVarType()==FLOAT_TYPE){
-			if(right->getVarType()==INT_TYPE){
-				opVal->fltValue() = left->fltValue() - right->intValue();
-			}
-			else{
-				opVal->fltValue() = left->fltValue() - right->fltValue();
-			}
-		}
-		else if(right->getVarType()==FLOAT_TYPE){
-			if (left->getVarType()==INT_TYPE) {
-				opVal->fltValue() = left->intValue() - right->fltValue();
-			} else {
-				opVal->fltValue() = left->fltValue() - right->fltValue();
-			}
-		}
-		else if (right->getVarType()==INT_TYPE && left->getVarType()==INT_TYPE){
-			opVal->setVarType(INT_TYPE);
-			opVal->intValue() = left->intValue() - right->intValue();
-		}
-	}
+	opVal->code = left->code + addop + right->code;
+	opVal->code += addAddOpAsmCode(addop, opVal->getName(), left, right);
 	return opVal;
 }
 
