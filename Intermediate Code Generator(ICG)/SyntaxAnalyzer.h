@@ -221,6 +221,8 @@ void insertIntoParamType(SymbolInfo* var){
 	}
 	paramType.push_back(variableType);
 	noOfParam++;
+	var->setDecType(VARIABLE);
+	var->setVarType(variableType);
 	SymbolInfo* temp = new SymbolInfo(var->getName(), var->getType());
 	temp->setDecType(VARIABLE);
 	temp->setVarType(variableType);
@@ -244,7 +246,12 @@ SymbolInfo* getVariable(SymbolInfo* sym){
 		}
 	}
 	else{
-		return temp;
+		// A variable used inside a function must be used as a temporary variable
+		SymbolInfo* var = new SymbolInfo(temp->getName(), temp->getType());
+		var->setDecType(temp->getDecType());
+		var->setVarType(temp->getVarType());
+		var->setType(TEMPORARY_TYPE);
+		return var;
 	}
 	return nullValue();
 }
@@ -270,22 +277,23 @@ SymbolInfo* getArrVar(SymbolInfo* sym, SymbolInfo* index){
 			printError("Expression inside third brackets not an integer");
 		}
 		else{
-			temp->setArrIndex(static_cast<size_t>(index->intValue())); // Setting the index to the index value that we are trying to access
+			//temp->setArrIndex(static_cast<size_t>(index->intValue())); // Setting the index to the index value that we are trying to access
+			temp->setArrIndex(index->getName());
 		}
 	}
-	return temp;
+	// A variable used inside a function must be used as a temporary variable
+	SymbolInfo* var = new SymbolInfo(temp->getName(), temp->getType());
+	var->setDecType(temp->getDecType());
+	var->setVarType(temp->getVarType());
+	var->setArrSize(temp->getArrSize());
+	var->setArrIndex(temp->getArrIndex());
+	var->setType(TEMPORARY_TYPE);
+	return var;
 }
 
 SymbolInfo* getConstValue(SymbolInfo* sym, string varType){
 	sym->setDecType(VARIABLE);
 	sym->setVarType(varType);
-	if (varType == FLOAT_TYPE) {
-		sym->floatValues.push_back(0);
-		sym->fltValue() = static_cast<float>(atof(sym->getName().data()));
-	} else if (varType == INT_TYPE) {
-		sym->intValues.push_back(0);
-		sym->intValue() = atoi(sym->getName().data());
-	}
 	return sym;
 }
 

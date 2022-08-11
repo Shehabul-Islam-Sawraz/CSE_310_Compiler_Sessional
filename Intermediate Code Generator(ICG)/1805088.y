@@ -499,8 +499,10 @@ int main(int argc,char *argv[])
 	logout= fopen("log.txt","w");
 	errorout= fopen("error.txt","w");
 	parserout= fopen("parser.txt","w");
+        asmFile.open("code.asm");
 
         yyin = inputFile;
+        init_model();
 	yyparse();
         symbolTable->printAllScope(logout);
         line_count--;

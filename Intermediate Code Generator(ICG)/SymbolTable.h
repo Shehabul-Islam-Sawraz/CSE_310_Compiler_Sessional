@@ -13,6 +13,7 @@ using namespace std;
 #define FLOAT_TYPE "FLOAT"
 #define VOID_TYPE "VOID"
 #define CHAR_TYPE "CHAR"
+#define TEMPORARY_TYPE "TEMP"
 
 class SymbolInfo
 {
@@ -31,6 +32,7 @@ private:
     // float defFloat = 0.0; // Set default value to 0.0 to a FLOAT_TYPE variable until some value is assigned into it
     int scopeId = -1;
     string funcRetLabel = "";
+    string arrIndex = "";
 
 public:
     //vector<int> intValues; // Stores array values if array is INT_TYPE. Default value is set to 0
@@ -151,6 +153,14 @@ public:
     //     }
 	// 	this->arrIndex = arrIndex;
 	// }
+
+    void setArrIndex(string index){
+        this->arrIndex = index;
+    }
+
+    string getArrIndex(){
+        return this->arrIndex;
+    }
 
     SymbolInfo* getPrevious(){
         return this->previous;
