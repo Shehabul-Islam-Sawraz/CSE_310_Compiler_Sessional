@@ -12,11 +12,13 @@ extern char *yytext;
 string variableType;
 size_t syntax_error_count = 0;
 size_t warning_count = 0;
+size_t offset = 2;
 
 size_t noOfParam = 0;
+size_t totalParams = 0;
 vector<string> paramType;
 vector<SymbolInfo> parameters;
-SymbolInfo* currentFunc = nullptr;
+vector<int> offsets;
 
 bool errorRule = false;
 bool isReturnedFromFunction = false;
@@ -109,7 +111,7 @@ void yyerror(const char *s) {
 	lookAheadBuf = yytext;
 }
 
-SymbolInfo* insertVar(SymbolInfo* var){
+SymbolInfo* insertVar(SymbolInfo* var, bool isArray = false){
 	if(variableType==VOID_TYPE) { // Semantic error
 		printError("Variable type cannot be void");
 	}
@@ -123,7 +125,27 @@ SymbolInfo* insertVar(SymbolInfo* var){
 			SymbolInfo* temp = insertIntoSymbolTable(var);
 			temp->setDecType(VARIABLE);
 			temp->setVarType(variableType);
-			addVarInDataSegment(temp->getName());
+			//addVarInDataSegment(temp->getName());
+			if(!isArray){
+				if(symbolTable->getCurrentScope()->getId()!="1" && (error_count+syntax_error_count)==0){
+					//writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
+					string code = "\t\tPUSH AX\t; In line no " + to_string(line_count) + ": " + temp->getName() + " declared";
+					temp->setOffset(offset);
+					offset += 2;
+					addInCodeSegment(code);
+				}
+				else if(symbolTable->getCurrentScope()->getId()=="1"){
+					if(variableType==FLOAT_TYPE){
+						printError("Float type global variable is not supported!!");
+					}
+					if((error_count+syntax_error_count)==0){
+						return nullValue();
+					}
+					temp->isGlobal = true;
+					//temp->setOffset(-1);
+					addGlobalVarInDataSegment(temp->getName());
+				}
+			}
 			return temp;
 		}
 	}
@@ -150,7 +172,7 @@ void insertFunc(SymbolInfo* func, SymbolInfo* retType){
 }
 
 void insertArr(SymbolInfo *sym, SymbolInfo *index) {
-	SymbolInfo *arr = insertVar(sym);
+	SymbolInfo *arr = insertVar(sym, true);
 	arr->setDecType(ARRAY);
 	arr->setArrSize(static_cast<size_t>(atoi(index->getName().data()))); // Set the size of the array as defined size
 	// int l = arr->getArrSize();
@@ -158,7 +180,29 @@ void insertArr(SymbolInfo *sym, SymbolInfo *index) {
 	// 	arr->intValues.push_back(0);
 	// 	arr->floatValues.push_back(0);
 	// }
-	addArrInDataSegment(arr->getName());
+	int arrsize = arr->getArrSize();
+	if(symbolTable->getCurrentScope()->getId()!="1" && (error_count+syntax_error_count)==0){
+		//writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
+		string code = "\t\tIn line no " + to_string(line_count) + ": Array named " + arr->getName() + " with size " + to_string(arrsize) + " declared";
+		for(int i=0; i<arraySize; i++) {
+			code += "\n\t\tPUSH AX";
+		}
+		code += "\n\t\t;array declared";
+		arr->setOffset(offset);
+		offset += arrsize*2;
+		addInCodeSegment(code);
+	}
+	else if(symbolTable->getCurrentScope()->getId()=="1"){
+		if(variableType==FLOAT_TYPE){
+			printError("Float type global variable is not supported!!");
+		}
+		if((error_count+syntax_error_count)==0){
+			return nullValue();
+		}
+		arr->isGlobal = true;
+		//arr->setOffset(-1);
+		addGlobalVarInDataSegment(arr->getName(), arrsize, true);
+	}
 }
 
 void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
@@ -200,10 +244,12 @@ void addFunctionDef(SymbolInfo* retType, SymbolInfo* func){
 		if(iserr){
 			return;
 		}
+		//totalParams = 0;
 		temp->setIsFuncDeclared(true);
+		currentFunc = temp;
 		return;
 	}
-	
+	//totalParams = 0;
 	insertFunc(func,retType);
 	func = symbolTable->lookUp(func->getName(),(int)(hashValue(func->getName())%NoOfBuckets));
 	func->setIsFuncDeclared(true);
@@ -221,6 +267,7 @@ void insertIntoParamType(SymbolInfo* var){
 	}
 	paramType.push_back(variableType);
 	noOfParam++;
+	totalParams++;
 	var->setDecType(VARIABLE);
 	var->setVarType(variableType);
 	SymbolInfo* temp = new SymbolInfo(var->getName(), var->getType());
@@ -251,6 +298,16 @@ SymbolInfo* getVariable(SymbolInfo* sym){
 		var->setDecType(temp->getDecType());
 		var->setVarType(temp->getVarType());
 		var->setType(TEMPORARY_TYPE);
+		var->setOffset(temp->getOffset());
+		var->isGlobal = temp->isGlobal;
+		string code = "";
+		if(var->isGlobal){
+			code += "\t\tPUSH " + var->getName() + "; Pushing global variable to stack for expression evaluation";
+		}
+		else{
+			code += "\t\tPUSH [BP + " + to_string(-1 * var->getOffset()) + "];" + var->getName() + " pushed for expression evaluation";
+		}
+		addInCodeSegment(code);
 		return var;
 	}
 	return nullValue();
@@ -288,7 +345,39 @@ SymbolInfo* getArrVar(SymbolInfo* sym, SymbolInfo* index){
 	var->setArrSize(temp->getArrSize());
 	var->setArrIndex(temp->getArrIndex());
 	var->setType(TEMPORARY_TYPE);
+	var->setOffset(temp->getOffset());
+	var->isGlobal = temp->isGlobal;
+	// string code = "";
+	// code += "\t\t; At line no " + to_string(line_count) + ": getting value of " + var->getName() + "[" + index->getName() + "]\n";
+	// code += "\t\tPOP BX" + "\t; Getting index of the array\n";
+	// code += "\t\tSHL BX, 1" + "\t; Multiplying index by 2 to match size of a word\n";
+	// if(var->isGlobal){
+	// 	code += "\t\tMOV AX, " + var->getName() + "[BX]" + "\t; Getting the value of the array at index BX\n";
+	// }
+	// else{
+	// 	code += "SUB BX, " + to_string(var->getOffset()) + "\t; Adding the offset of the array to get the offset of array element\n";
+	// 	code += "ADD BX, BP" + "\t; Adding BP to BX to get the address of the array\n";
+    //     code += "\t\tMOV AX, [BX]" + "\t; Getting the value of the array at address BX\n";
+	// }
+	// // Pushing the index and value of the array element on the stack
+	// // This will allow the ASSIGNOP and INCOP to use it later
+	// code += "\t\tPUSH AX" + "\t; Pushing the value of the array element at index " + index->getName() + "\n";
+	// code += "\t\tPUSH BX" + "\t; Pushing the index of the array\n";
+	// addInCodeSegment(code);
+	evaluateArrayVariable(var, index->getName());
 	return var;
+}
+
+SymbolInfo* endFuncDef(bool endProc = false, string name = "", string retType = ""){
+	SymbolInfo* temp = new SymbolInfo("",TEMPORARY_TYPE);
+	offset = offsets.back();
+	offsets.pop_back();
+	if(endProc){
+		endProcedure(name, retType);
+	}
+	totalParams = 0;
+	currentFunc = nullptr;
+	return temp;
 }
 
 SymbolInfo* getConstValue(SymbolInfo* sym, string varType){
@@ -361,8 +450,8 @@ SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
 	else{
 		opVal = getConstValue(opVal,INT_TYPE);
 	}
-	opVal->code = left->code + addop + right->code;
-	opVal->code += addAddOpAsmCode(addop, opVal->getName(), left, right);
+	//opVal->code = left->code + addop + right->code;
+	//opVal->code += addAddOpAsmCode(addop, opVal->getName(), left, right);
 	return opVal;
 }
 
@@ -718,8 +807,14 @@ void checkFuncReturnType() {
 
 void createScope(){
 	scope = symbolTable->createScopeTable(NoOfBuckets);
+	offsets.push_back(offset);
+	offset = 2;
 	for(auto param: parameters){
-		insertIntoSymbolTable(&param);
+		SymbolInfo* temp =  insertIntoSymbolTable(&param, true);
+		temp->setOffset(-offset); // As in function first parameters are pushed then Bp is pushed. So offset must be positive 
+								  // w.r.t BP (We are using negative as while working with offset we have multiplied bby -1 
+								  // everywhere for making general rule) 
+		offset += 2;
 	}
 	clearFunctionParam();
 }
@@ -728,7 +823,7 @@ void exitScope(){
 	if(currentFunc!=nullptr && isReturnedFromFunction==false && currentFunc->getFuncRetType()!=VOID_TYPE){
 		printWarning(currentFunc->getName() + " function with return type " + currentFunc->getFuncRetType() + " has no return statement");
 	}
-	currentFunc = nullptr;
+	//currentFunc = nullptr;
 	symbolTable->printAllScope(logout);
 	fprintf(logout,"\n\n");
 	scope = symbolTable->exitScope();

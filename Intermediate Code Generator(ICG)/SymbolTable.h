@@ -33,11 +33,13 @@ private:
     int scopeId = -1;
     string funcRetLabel = "";
     string arrIndex = "";
+    size_t offset;
 
 public:
     //vector<int> intValues; // Stores array values if array is INT_TYPE. Default value is set to 0
     //vector<float> floatValues; // Stores array values if array is FLOAT_TYPE. Default value is set to 0.0
     string code;
+    bool isGlobal;
     SymbolInfo(string name,string type){
         this->name = name;
         this->type = type;
@@ -47,6 +49,8 @@ public:
         this->varType = "";
         this->isFuncDeclared = false;
         this->funcRetType = "";
+        this->isGlobal = false;
+        this->offset = -1;
     }
 
     void setName(string name){
@@ -196,6 +200,14 @@ public:
 
     bool isVoidFunc(){
         return isFunction() && getFuncRetType()==VOID_TYPE;
+    }
+
+    void setOffset(int offset){
+        this->offset = offset;
+    }
+
+    size_t getOffset(){
+        return this->offset;
     }
 
     // int setVarValue(int val) { // As default value was set to 0 now we change the value with the defined value

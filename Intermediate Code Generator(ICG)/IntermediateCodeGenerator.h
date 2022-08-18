@@ -13,6 +13,8 @@ int tempCount=0,maxTempCount=-1;
 ScopeTable* scope = nullptr; // Have to declare it in ICG header file
 SymbolTable* symbolTable = new SymbolTable(); // Have to declare it in ICG header file
 
+SymbolInfo* currentFunc = nullptr;
+
 string ruleName[] = {"init_asm_model", "data_segment", "code_segment",
                          "init_data","error"};
 
@@ -85,7 +87,7 @@ uint32_t hashValue(string str){
 void writeInDataSegment(){
     asmFile.close();
     asmFile.open("code.asm");
-    asmFile << popValue(init_asm_model);
+    //asmFile << popValue(init_asm_model);
     asmFile << popValue(data_segment);
     asmFile << popValue(code_segment);
 }
@@ -102,33 +104,50 @@ string GET_ASM_VAR_NAME(string var){
     return var + to_string(temp->getScopeID());
 }
 
-void addVarInDataSegment(string var){
-    string code = GET_ASM_VAR_NAME(var) + DEFINE_WORD + "?";
+void addGlobalVarInDataSegment(string var, int arrsize = 0, bool isArray = false){
+    //string code = GET_ASM_VAR_NAME(var) + DEFINE_WORD + "?";
+    if(!isArray){
+        string code = "\t" + var + DEFINE_WORD + "?";
+    }
+    else{
+        string code = "\t" + var + DEFINE_WORD + to_string(arrsize) + ARRAY_DUP;
+    }
     replaceByNewLine(code);
     //datasegment+=code;
-    setValue(popValue(data_segment)+code);
+    setValue(data_segment, popValue(data_segment)+code);
     writeInDataSegment();
 }
 
-void addArrInDataSegment(string var){
-    SymbolInfo* temp = symbolTable->lookUp(var,(int)(hashValue(var)%NoOfBuckets));
-    string code = GET_ASM_VAR_NAME(var) + DEFINE_WORD + to_string(temp->getArrSize()) + ARRAY_DUP;
-    replaceByNewLine(code);
-    //datasegment+=code;
-    setValue(popValue(data_segment)+code);
-    writeInDataSegment();
-}
+// void addVarInDataSegment(string var){
+//     //string code = GET_ASM_VAR_NAME(var) + DEFINE_WORD + "?";
+//     string code = "\t" + var + DEFINE_WORD + "?";
+//     replaceByNewLine(code);
+//     //datasegment+=code;
+//     setValue(data_segment, popValue(data_segment)+code);
+//     writeInDataSegment();
+// }
+
+// void addArrInDataSegment(string var, int arrsize){
+//     //SymbolInfo* temp = symbolTable->lookUp(var,(int)(hashValue(var)%NoOfBuckets));
+//     string code = "\t" + var + DEFINE_WORD + to_string(arrsize) + ARRAY_DUP;
+//     replaceByNewLine(code);
+//     //datasegment+=code;
+//     setValue(data_segment, popValue(data_segment)+code);
+//     writeInDataSegment();
+// }
 
 void addInCodeSegment(string code){
-    string str = code;
-    replaceByNewLine(str);
-    //codesegment+=str;
-    setValue(popValue(code_segment)+str);
-    writeInCodeSegment(str);
+    if((error_count+syntax_error_count)==0){
+        string str = code;
+        replaceByNewLine(str);
+        //codesegment+=str;
+        setValue(code_segment, popValue(code_segment)+str);
+        writeInCodeSegment(str);
+    }
 }
 
 string getLabelForFunction(string func_name){
-    return "_" + func_name;
+    return func_name + "_EXIT";
 }
 
 void init_model(){
@@ -148,7 +167,7 @@ string newTemp(){
     temp += c;
     if(tempCount>maxTempCount){
         maxTempCount++;
-        addVarInDataSegment(temp);
+        addGlobalVarInDataSegment(temp);
     }
     tempCount++;
     return temp;
@@ -181,6 +200,10 @@ string operatorToReg(string command, string reg, SymbolInfo* sym){
     }
 }
 
+string jumpInstant(string label){
+    return "JMP " + label + NEWLINE;
+}
+
 string addAddOpAsmCode(string op, string tempVar, SymbolInfo* left, SymbolInfo* right){
     if(op=="+"){
         op = "ADD";
@@ -195,4 +218,92 @@ string addAddOpAsmCode(string op, string tempVar, SymbolInfo* left, SymbolInfo* 
     code += operatorToReg(op, "AX", right);
     code += "MOV" + temp + ", AX" + NEWLINE;
     return code;
+}
+
+string getExpressionCode(SymbolInfo* sym){
+    string code = "";
+    code += sym->code;
+    code += operatorToReg("MOV", "DX", sym);
+    code += jumpInstant(currentFunc->getFuncRetLabel());
+    return code;
+}
+
+void initMainProc(){
+    if((syntax_error_count+error_count)>0){
+        return;
+    }
+    string code = "";
+    code += "\t\t; DATA SEGMENT INITIALIZATION\n";
+    code += "\t\tMOV AX, @DATA\n\t\tMOV DS, AX";
+    offset = 2;
+    addInCodeSegment(code);
+}
+
+void startProcedure(string name){
+    if((syntax_error_count+error_count)>0){
+        return;
+    }
+    string code = "";
+    code += "\t" + name + " PROC\n";
+    code += "\t\t; Function with name " + name + " started";
+    code += "\t\tPUSH BP\n";
+    code += "\t\tMOV BP, SP\t; All the offsets of a function depends on the value of BP\n";
+    addInCodeSegment(code);
+    if(name == "main"){
+        initMainProc();
+    }
+}
+
+void endProcedure(string name, string retType){
+    if((syntax_error_count+error_count)>0){
+        return;
+    }
+
+    string code = "";
+    code += "\t\t" + getLabelForFunction(name) + ":\n"; 
+    code += "\t\tMOV SP, BP\t; Restoring SP at the end of function\n";
+    code += "\t\tPOP BP\t; Restoring BP at the end of function\n";
+
+    if(name == "main"){
+        code += "\t\t; Setting interrupt for function end\n";
+        code += "\t\tMOV AH, 4CH\n\t\tINT 21H\n";
+    }
+    if(currentFunc->getFuncRetType() == VOID_TYPE){
+        code += "\t\tRET 0\n"
+    }
+    else{
+        vector<string> v = currentFunc->getparamType();
+        code += "\t\tRET " + to_string(2*v.size()) + "\n";
+    }
+
+    code += "\t" + name + " ENDP\n";
+    addInCodeSegment(code);
+}
+
+void popArrayFromStack(string reg, SymbolInfo* sym){
+    // If after "variable: Id" or "variable: Array" rule matches and next rule doesn't match with INCOP or DECOP, 
+    // then we no longer need the index of the previously accessed array
+    if(sym->getDecType() == ARRAY){
+        addInCodeSegment("\t\tPOP BX" "\t; Array index popped because it is no longer required");
+    }
+}
+
+void evaluateArrayVariable(SymbolInfo* var, string index){
+    string code = "";
+	code += "\t\t; At line no " + to_string(line_count) + ": getting value of " + var->getName() + "[" + index + "]\n";
+	code += "\t\tPOP BX" + "\t; Getting index of the array\n";
+	code += "\t\tSHL BX, 1" + "\t; Multiplying index by 2 to match size of a word\n";
+	if(var->isGlobal){
+		code += "\t\tMOV AX, " + var->getName() + "[BX]" + "\t; Getting the value of the array at index BX\n";
+	}
+	else{
+		code += "SUB BX, " + to_string(var->getOffset()) + "\t; Adding the offset of the array to get the offset of array element\n";
+		code += "ADD BX, BP" + "\t; Adding BP to BX to get the address of the array\n";
+        code += "\t\tMOV AX, [BX]" + "\t; Getting the value of the array at address BX\n";
+	}
+	// Pushing the index and value of the array element on the stack
+	// This will allow the ASSIGNOP and INCOP to use it later
+	code += "\t\tPUSH AX" + "\t; Pushing the value of the array element at index " + index->getName() + "\n";
+	code += "\t\tPUSH BX" + "\t; Pushing the index of the array\n";
+	addInCodeSegment(code);
 }
