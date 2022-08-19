@@ -398,7 +398,7 @@ void endProcedure(string name, string retType){
 
 void popArrayFromStack(string reg, SymbolInfo* sym){
     // If after "variable: Id" or "variable: Array" rule matches and next rule doesn't match with INCOP or DECOP, 
-    // then we no longer need the index of the previously accessed array
+    // and goes to "factor : variable" rule then we no longer need the index of the previously accessed array
     if(sym->getDecType() == ARRAY){
         addInCodeSegment("\t\tPOP BX" "\t; Array index popped because it is no longer required");
     }

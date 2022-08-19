@@ -551,27 +551,36 @@ SymbolInfo* getAssignExpVal(SymbolInfo* left, SymbolInfo* right){ // Handles ass
 		printError("Assign Operation on void type");
 		return nullValue();
 	}
+	string code = "";
+	code += "\t\tPOP BX" + "\t; " + right->getName() + " popped from stack\n";
 	if(left->isVariable()){
 		if(right->getVarType()==INT_TYPE){
 			if(left->getVarType()==FLOAT_TYPE){
 				printWarning("Assigning integer value to float");
-				left->setVarValue(static_cast<float>(right->intValue()*1.0));
+				//left->setVarValue(static_cast<float>(right->intValue()*1.0));
 			}
-			else{
-				left->setVarValue(right->intValue());
-			}
+			// else{
+			// 	left->setVarValue(right->intValue());
+			// }
 		}
 		else{
 			if(left->getVarType()==INT_TYPE){
 				printWarning("Assigning float value to integer");
-				left->setVarValue(static_cast<int>(right->fltValue()));
+				//left->setVarValue(static_cast<int>(right->fltValue()));
 			}
-			else{
-				left->setVarValue(right->fltValue());
-			}
+			// else{
+			// 	left->setVarValue(right->fltValue());
+			// }
+		}
+		if(left->isGlobal){
+			code += "\t\tMOV " + left->getName() + ", BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE; 
+		}
+		else{
+			code += "\t\tMOV [BP + " + to_string(-1 * left->getOffset()) + "], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE; 
 		}
 	}
 	else if(left->isArray()){
+		code += "\t\tPOP AX" + "\t; Index of the array popped\n";
 		if(right->getVarType()==INT_TYPE){
 			if(left->getVarType()==FLOAT_TYPE){
 				printWarning("Assigning integer value to float type array");
@@ -582,10 +591,17 @@ SymbolInfo* getAssignExpVal(SymbolInfo* left, SymbolInfo* right){ // Handles ass
 				printWarning("Assigning float value to integer type array");
 			}
 		}
+		if(left->isGlobal){
+			code += "\t\tMOV " + left->getName() + "[AX], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
+		}
+		else{
+			code += "\t\tMOV [AX], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
+		}
 	}
 	else if(left->isFunction()){
 		printError("Can't assign value to a function");
 	}
+	addInCodeSegment(code);
 	return left;
 }
 

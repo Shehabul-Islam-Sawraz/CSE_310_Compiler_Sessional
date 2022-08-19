@@ -432,6 +432,9 @@ variable: ID
                 ;
 
 expression: logic_expression
+                                {
+                                        $$ = $1;
+                                }
                 |       variable ASSIGNOP logic_expression
                                 {
                                         $$ = getAssignExpVal($1, $3);
