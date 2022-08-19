@@ -204,7 +204,7 @@ string jumpInstant(string label){
     return "JMP " + label + NEWLINE;
 }
 
-string addAddOpAsmCode(string op, string tempVar, SymbolInfo* left, SymbolInfo* right){
+string addAddOpAsmCode(string op, SymbolInfo* left, SymbolInfo* right){
     if(op=="+"){
         op = "ADD";
     }
@@ -213,10 +213,12 @@ string addAddOpAsmCode(string op, string tempVar, SymbolInfo* left, SymbolInfo* 
     }
 
     string code = "";
-    string temp = GET_ASM_VAR_NAME(tempVar);
-    code += operatorToReg("MOV", "AX", left);
-    code += operatorToReg(op, "AX", right);
-    code += "MOV" + temp + ", AX" + NEWLINE;
+    code += "\t\t; At line no " + to_string(line_count) + ": " + op + " " +  left->getName() + " and " + right->getName() + "\n";
+    code += "\t\tPOP BX\t; " + right->getName() + " popped from stack\n";
+    code += "\t\tPOP AX\t; " + left->getName() + " popped from stack\n";
+    code += "\t\t" + op + " AX, BX\n";
+    code += "\t\tPUSH AX\t; Pushed evaluated value of " + left->getName() + op + right->getName() + " in the stack\n";
+    addInCodeSegment(code);
     return code;
 }
 

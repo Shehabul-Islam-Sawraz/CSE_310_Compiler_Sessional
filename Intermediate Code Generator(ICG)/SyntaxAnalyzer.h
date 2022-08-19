@@ -452,6 +452,7 @@ SymbolInfo* getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right){
 	}
 	//opVal->code = left->code + addop + right->code;
 	//opVal->code += addAddOpAsmCode(addop, opVal->getName(), left, right);
+	addAddOpAsmCode(addop, left, right);
 	return opVal;
 }
 
