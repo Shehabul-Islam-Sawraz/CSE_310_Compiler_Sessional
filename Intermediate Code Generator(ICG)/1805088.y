@@ -439,6 +439,9 @@ expression: logic_expression
                 ;
 
 logic_expression: rel_expression
+                                {
+                                        $$ = $1;
+                                }
                 |       rel_expression LOGICOP rel_expression
                                 {
                                         $$ = getLogicOpVal($1,$2,$3);
@@ -446,6 +449,9 @@ logic_expression: rel_expression
                 ;
 
 rel_expression: simple_expression
+                                {
+                                        $$=$1;
+                                }
                 |       simple_expression RELOP simple_expression
                                 {
                                         $$ = getRelOpVal($1,$2,$3);

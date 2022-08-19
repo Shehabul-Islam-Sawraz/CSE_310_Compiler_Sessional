@@ -597,59 +597,7 @@ SymbolInfo* getRelOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
 	string relop = op->getName();
 	SymbolInfo* opVal = new SymbolInfo("","");
 	opVal->setVarType(INT_TYPE);
-	int lIVal = 0, rIVal=0;
-	float lFVal = 0.0, rFVal = 0.0;
-	int &result = opVal->intValue();
-	int8_t cmp = 0x00; // 0->int,F->float,0F->int-float,FF->float-float comparison
-	if(left->getVarType()==INT_TYPE){
-		lIVal = left->intValue();
-		cmp &= 0x0F;
-	}
-	else{
-		lFVal = left->fltValue();
-		cmp |= 0xF0;
-	}
-	if (right->getVarType()==INT_TYPE) {
-		rIVal = right->intValue();
-		cmp &= 0xF0;
-	} 
-	else {
-		rFVal = right->fltValue();
-		cmp |= 0x0F;
-	}
-
-	if (cmp == 0x00) {
-		result = relop == "==" ? lIVal == rIVal :
-		         relop == "!=" ? lIVal != rIVal :
-		         relop == "<=" ? lIVal <= rIVal :
-		         relop == ">=" ? lIVal >= rIVal :
-		         relop == "<" ? lIVal < rIVal :
-		         relop == ">" ? lIVal > rIVal : 0;
-	} 
-	else if (cmp == 0x0F) {
-		result = relop == "==" ? lIVal == rFVal :
-		         relop == "!=" ? lIVal != rFVal :
-		         relop == "<=" ? lIVal <= rFVal :
-		         relop == ">=" ? lIVal >= rFVal :
-		         relop == "<" ? lIVal < rFVal :
-		         relop == ">" ? lIVal > rFVal : 0;
-	} 
-	else if (cmp == 0xF0) {
-		result = relop == "==" ? lFVal == rIVal :
-		         relop == "!=" ? lFVal != rIVal :
-		         relop == "<=" ? lFVal <= rIVal :
-		         relop == ">=" ? lFVal >= rIVal :
-		         relop == "<" ? lFVal < rIVal :
-		         relop == ">" ? lFVal > rIVal : 0;
-	} 
-	else if (cmp == 0xFF) {
-		result = relop == "==" ? lFVal == rFVal :
-		         relop == "!=" ? lFVal != rFVal :
-		         relop == "<=" ? lFVal <= rFVal :
-		         relop == ">=" ? lFVal >= rFVal :
-		         relop == "<" ? lFVal < rFVal :
-		         relop == ">" ? lFVal > rFVal : 0;
-	}
+	addRelOpAsmCode(op->getName(), left, right);
 	if(relop == "==" && left->getVarType()!=right->getVarType()){
 		printWarning("Comparision between two different types");
 	}
@@ -664,43 +612,7 @@ SymbolInfo* getLogicOpVal(SymbolInfo* left, SymbolInfo* op, SymbolInfo* right){
 	string logicOp = op->getName();
 	SymbolInfo* opVal = new SymbolInfo("","");
 	opVal->setVarType(INT_TYPE);
-	int lIVal = 0, rIVal=0;
-	float lFVal = 0.0, rFVal = 0.0;
-	int &result = opVal->intValue();
-	int8_t cmp = 0x00; // 0->int,F->float,0F->int-float,FF->float-float comparison
-	if(left->getVarType()==INT_TYPE){
-		lIVal = left->intValue();
-		cmp &= 0x0F;
-	}
-	else{
-		lFVal = left->fltValue();
-		cmp |= 0xF0;
-	}
-	if (right->getVarType()==INT_TYPE) {
-		rIVal = right->intValue();
-		cmp &= 0xF0;
-	} 
-	else {
-		rFVal = right->fltValue();
-		cmp |= 0x0F;
-	}
-
-	if (cmp == 0x00) {
-		result = logicOp == "&&" ? lIVal && rIVal :
-		         logicOp == "||" ? lIVal || rIVal : 0;
-	} 
-	else if (cmp == 0x0F) {
-		result = logicOp == "&&" ? lIVal && rFVal :
-		         logicOp == "||" ? lIVal || rFVal : 0;
-	} 
-	else if (cmp == 0xF0) {
-		result = logicOp == "&&" ? lFVal && rIVal :
-		         logicOp == "||" ? lFVal || rIVal : 0;
-	} 
-	else if (cmp == 0xFF) {
-		result = logicOp == "&&" ? lFVal && rFVal :
-		         logicOp == "||" ? lFVal || rFVal : 0;
-	}
+	addLogicOpAsmCode(op->getName(), left, right);
 	if(left->getVarType()!=right->getVarType()){
 		printWarning("Comparision between two different types");
 	}

@@ -9,6 +9,7 @@ string codesegment,datasegment;
 ofstream asmFile;
 
 int tempCount=0,maxTempCount=-1;
+int labelCount = 0;
 
 ScopeTable* scope = nullptr; // Have to declare it in ICG header file
 SymbolTable* symbolTable = new SymbolTable(); // Have to declare it in ICG header file
@@ -173,6 +174,15 @@ string newTemp(){
     return temp;
 }
 
+string newLabel() {
+	string lb = "L";
+	char b[3];
+	sprintf(b, "%d", labelCount);
+	labelCount++;
+	lb += b;
+	return lb;
+}
+
 string setSIForArray(string reg, string offset){
     string code = "";
     code += "MOV " + reg + ", " + GET_ASM_VAR_NAME(offset) + NEWLINE;
@@ -200,11 +210,27 @@ string operatorToReg(string command, string reg, SymbolInfo* sym){
     }
 }
 
-string jumpInstant(string label){
-    return "JMP " + label + NEWLINE;
+string declareLabel(string label, bool conditionValue){
+    string code = "";
+    code += "\t\tJMP " + label + NEWLINE;
+    if(conditionValue){
+        code += "\t\tPUSH 1\t; Saving condition value to be true" + NEWLINE;
+    }
+    else{
+        code += "\t\tPUSH 0\t; Saving condition value to be false" + NEWLINE;
+    }
+    return code;
 }
 
-string addAddOpAsmCode(string op, SymbolInfo* left, SymbolInfo* right){
+string conditionalJump(string condition, string label){
+    return "\t\t" + condition + " " + label + NEWLINE;
+}
+
+string jumpInstant(string label){
+    return "\t\tJMP " + label + NEWLINE;
+}
+
+void addAddOpAsmCode(string op, SymbolInfo* left, SymbolInfo* right){
     if(op=="+"){
         op = "ADD";
     }
@@ -219,7 +245,95 @@ string addAddOpAsmCode(string op, SymbolInfo* left, SymbolInfo* right){
     code += "\t\t" + op + " AX, BX\n";
     code += "\t\tPUSH AX\t; Pushed evaluated value of " + left->getName() + op + right->getName() + " in the stack\n";
     addInCodeSegment(code);
-    return code;
+}
+
+string getRelOpASM(string op){
+    if(op == ">"){
+        return "JG";
+    }
+    else if(op == ">="){
+        return "JGE";
+    }
+    else if(op == "<"){
+        return "JL";
+    }
+    else if(op == "<="){
+        return "JLE";
+    }
+    else if(op == "!="){
+        return "JnE";
+    }
+    else if(op == "=="){
+        return "JE";
+    }
+    return "";
+}
+
+void addRelOpAsmCode(string op, SymbolInfo* left, SymbolInfo* right){
+    op = getRelOpASM(op);
+    string labelIfTrue = newLabel();
+    string labelIfFalse = newLabel();
+
+    string code = "";
+    code += "\t\t; At line no  " + to_string(line_count) + " checking if " + left->getName() + op + right->getName() + "\n";
+    code += "\t\tPOP BX" + "\t; Popped out " + right->getName() + " from stack\n";
+    code += "\t\tPOP AX" + "\t; Popped out " + left->getName() + " from stack\n";
+    code += "\t\tCMP AX, BX" + "\t; Comparing " + left->getName() + " with " + right->getName() + "\n";
+    code += conditionalJump(op,labelIfTrue); //If true then do conditional jump
+    code += jumpInstant(labelIfFalse); // If false then do long jump
+    code += declareLabel(labelIfTrue, true);
+    code += declareLabel(labelIfFalse, false);
+    addInCodeSegment(code);
+}
+
+void addLogicOpAsmCode(string op, SymbolInfo* left, SymbolInfo* right){
+    string labelForRightCheck = newLabel();
+    string endLabel = newLabel();
+    string resultLabel = newLabel();
+
+    string code = "";
+    code += "\t\t; At line no " + to_string(line_count) + ": " + left->getName() + op + right->getName() + NEWLINE;
+    code += "\t\tPOP BX" + "\t; " + right->getName() + " popped from stack\n";
+    code += "\t\tPOP AX" + "\t; " + left->getName() + " popped from stack\n";
+    code += "\t\tCMP AX, 0" + "\t; Comparing " + left->getName() + " and 0\n";
+    // If operator is &&, then getting a 0 will cause result to be 0
+    // and if the operator is ||, then ggetting a 1 will cause result
+    // to be 1 
+    if(op == "&&"){
+        code += "\t\t; If " + left->getName() + " is not 0, then check " 
+                + right->getName() + ". So, jump to " + labelForRightCheck + "\n";
+        code += conditionalJump("JNE", labelForRightCheck);
+    }
+    else{
+        code += "\t\t; if " + left->getName() + " is 0, check " 
+                + right->getName() + ". So, jump to " + labelForRightCheck + "\n";
+        code += conditionalJump("JE", labelForRightCheck);
+    }
+    code += jumpInstant(endLabel);
+    code += "\t\t" + labelForRightCheck + ":\n";
+    code += "\t\tCMP BX, 0" + "\t; Comparing " + right->getName() + " and 0\n";
+    // If operator is &&, then getting 0 in right will cause result to be 0
+    // and if the operator is ||, then ggetting a 1 in right will cause result
+    // to be 1 
+    if(op == "&&"){
+        code += "\t\t; If " + right->getName() + " is not 0, the whole expression is true. So, jump to " + resultLabel + NEWLINE;
+        code += conditionalJump("JNE", resultLabel);
+    }
+    else{
+        code += "\t\t; If " + right->getName() + " is 0, the whole expression is false. So, jump to " + resultLabel + NEWLINE;
+        code += conditionalJump("JE", resultLabel);
+    }
+    code += jumpInstant(endLabel);
+    if(op == "&&"){
+        code += declareLabel(resultLabel, true);
+        code += declareLabel(endLabel, false);
+    }
+    else{
+        code += declareLabel(resultLabel, false);
+        code += declareLabel(endLabel, true);
+    }
+
+    addInCodeSegment(code);
 }
 
 string getExpressionCode(SymbolInfo* sym){
