@@ -412,6 +412,104 @@ void addLogicOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
     addInCodeSegment(code);
 }
 
+void addIncDecAsmCode(SymbolInfo *sym, string op, string type)
+{
+    string code = "";
+    if(type == "post"){
+        code += "\t\t; At line no " + to_string(line_count) + ": Evaluating postfix " + op + " of " + sym->getName() + NEWLINE;
+        if(sym->getDecType() == ARRAY){
+            code += "\t\tPOP BX" + "\t; Array index popped from stack" + NEWLINE;
+            code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
+            code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
+            code += "\t\tMOV AX, [BP]" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
+            code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
+        }
+        else{
+            code += "\t\tPOP AX" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
+            code += "\t\tPUSH AX" + "\t; Pushing the value of " + sym->getName() + " back to stack" + NEWLINE;
+        }
+
+        if(op == "++"){
+            code += "\t\tINC AX" + "\t; Incrementing " + sym->getName() + NEWLINE;
+        }
+        else{
+            code += "\t\tDEC AX" + "\t; Decrementing " + sym->getName() + NEWLINE;
+        }
+        
+        if(sym->isGlobal) {
+            if(sym->getDecType() == ARRAY){
+                code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
+                code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
+                code += "\t\tMOV " + sym->getName() + "[BP], AX" + "\t; Saving the result in stack" + NEWLINE;
+                code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
+            }
+            else{
+                code += "\t\tMOV " + sym->getName() + ", AX" + "\t; Saving the result in stack" + NEWLINE;
+            }
+        } 
+        else {
+            if(sym->getDecType() == ARRAY){
+                code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
+                code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
+                code += "\t\tMOV [BP], AX" + "\t; Saving the result in stack" + NEWLINE;
+                code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
+            }
+            else{
+                code += "\t\tMOV [BP + " + to_string(-1 * sym->getOffset()) + "], AX" + "\t; Saving result in stack" + NEWLINE;
+            }
+        }
+    }
+    else{
+        code += "\t\t; At line no " + to_string(line_count) + ": Evaluating prefix " + op + " of " + sym->getName() + NEWLINE;
+        if(sym->getDecType() == ARRAY){
+            code += "\t\tPOP BX" + "\t; Array index popped from stack" + NEWLINE;
+            // code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
+            // code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
+            // code += "\t\tMOV AX, [BP]" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
+            // code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
+        }
+        // else{
+        //     code += "\t\tPOP AX" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
+        //     code += "\t\tPUSH AX" + "\t; Pushing the value of " + sym->getName() + " back to stack" + NEWLINE;
+        // }
+        code += "\t\tPOP AX" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
+
+        if(op == "++"){
+            code += "\t\tINC AX" + "\t; Incrementing " + sym->getName() + NEWLINE;
+        }
+        else{
+            code += "\t\tDEC AX" + "\t; Decrementing " + sym->getName() + NEWLINE;
+        }
+        
+        code += "\t\tPUSH AX" + "\t; Pushing the value of " + sym->getName() + " back to stack" + NEWLINE;
+
+        if(sym->isGlobal) {
+            if(sym->getDecType() == ARRAY){
+                code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
+                code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
+                code += "\t\tMOV " + sym->getName() + "[BP], AX" + "\t; Saving the result in stack" + NEWLINE;
+                code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
+            }
+            else{
+                code += "\t\tMOV " + sym->getName() + ", AX" + "\t; Saving the result in stack" + NEWLINE;
+            }
+        } 
+        else {
+            if(sym->getDecType() == ARRAY){
+                code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
+                code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
+                code += "\t\tMOV [BP], AX" + "\t; Saving the result in stack" + NEWLINE;
+                code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
+            }
+            else{
+                code += "\t\tMOV [BP + " + to_string(-1 * sym->getOffset()) + "], AX" + "\t; Saving result in stack" + NEWLINE;
+            }
+        }
+    }
+
+    addInCodeSegment(code);
+}
+
 string getExpressionCode(SymbolInfo *sym)
 {
     string code = "";

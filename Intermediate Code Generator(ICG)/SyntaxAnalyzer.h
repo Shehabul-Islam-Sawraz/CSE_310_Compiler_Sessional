@@ -793,66 +793,7 @@ SymbolInfo *getINDECOpVal(SymbolInfo *sym, string op, string type)
 {
 	SymbolInfo *opVal = new SymbolInfo("", "");
 	opVal = getConstValue(opVal, sym->getVarType());
-	if (op == "++")
-	{
-		if (sym->getVarType() == INT_TYPE && type == "pre")
-		{
-			opVal->intValue() = ++sym->intValue();
-		}
-		else if (sym->getVarType() == FLOAT_TYPE && type == "pre")
-		{
-			opVal->fltValue() = ++sym->fltValue();
-		}
-		else if (sym->getVarType() == INT_TYPE && type == "post")
-		{
-			opVal->intValue() = sym->intValue();
-		}
-		else if (sym->getVarType() == FLOAT_TYPE && type == "post")
-		{
-			opVal->fltValue() = sym->fltValue();
-		}
-		if (sym->getDecType() == VARIABLE)
-		{
-			if (sym->getVarType() == INT_TYPE)
-			{
-				sym->intValue() = sym->intValue() + 1;
-			}
-			else if (sym->getVarType() == FLOAT_TYPE)
-			{
-				sym->fltValue() = sym->fltValue() + 1;
-			}
-		}
-	}
-	else if (op == "--")
-	{
-		if (sym->getVarType() == INT_TYPE && type == "pre")
-		{
-			opVal->intValue() = --sym->intValue();
-		}
-		else if (sym->getVarType() == FLOAT_TYPE && type == "pre")
-		{
-			opVal->fltValue() = --sym->fltValue();
-		}
-		else if (sym->getVarType() == INT_TYPE && type == "post")
-		{
-			opVal->intValue() = sym->intValue();
-		}
-		else if (sym->getVarType() == FLOAT_TYPE && type == "post")
-		{
-			opVal->fltValue() = sym->fltValue();
-		}
-		if (sym->getDecType() == VARIABLE)
-		{
-			if (sym->getVarType() == INT_TYPE)
-			{
-				sym->intValue() = sym->intValue() - 1;
-			}
-			else if (sym->getVarType() == FLOAT_TYPE)
-			{
-				sym->fltValue() = sym->fltValue() - 1;
-			}
-		}
-	}
+	addIncDecAsmCode(sym, op, type);
 	return opVal;
 }
 

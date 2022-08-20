@@ -39,7 +39,9 @@ start: program
                 ;
 
 program: program unit
-                                {}
+                                {
+                                        //$$ = new SymbolInfo($1->getName() + "\n" + $2->getName(), TEMPORARY_TYPE);
+                                }
                 |       unit
                                 {
                                         //$$ = $1;
@@ -222,20 +224,22 @@ parameter_list: parameter_list COMMA type_specifier ID
 
 compound_statement: LCURL create_scope statements RCURL
                                 {
-                                        $$ = $3;
+                                        $$ = new SymbolInfo("{\n" + $3->getName() + "\n}", TEMPORARY_TYPE);
                                         exitScope();
                                 }
                 |       LCURL create_scope RCURL
                                 {
+                                        $$ = new SymbolInfo("{}", TEMPORARY_TYPE);
                                         exitScope();
                                 } 
                 |       LCURL create_scope error statements RCURL
                                 {
-                                        $$ = $4;
+                                        $$ = new SymbolInfo("{\n" + $4->getName() + "\n}", TEMPORARY_TYPE);
                                         exitScope();
                                 }     
                 |       LCURL create_scope error RCURL
                                 {
+                                        $$ = new SymbolInfo("{}", TEMPORARY_TYPE);
                                         exitScope();
                                 }    
                 ;
@@ -348,12 +352,16 @@ declaration_list : declaration_list COMMA ID
 
 statements: statement
                                 {
-                                        $1->code += NEWLINE;
+                                        // $$ = $1;
                                 }
                 |       statements statement
-                                {}
+                                {
+                                        // $$ = new SymbolInfo($1->getName() + NEWLINE + $2->getName(), TEMPORARY_TYPE);
+                                }
                 |       statements error
-                                {}                
+                                {
+                                        // $$ = $1;
+                                }                
                 ;
 
 statement: var_declaration
@@ -592,17 +600,23 @@ factor: variable
                 ;
 
 argument_list: arguments
-                                {}
+                                {
+                                        // $$ = $1;
+                                }
                 |       
-                                {}
+                                {
+                                        // $$ = new SymbolInfo("", TEMPORARY_TYPE);
+                                }
                 ;
 
 arguments: arguments COMMA logic_expression
                                 {
+                                        // $$ = new SymbolInfo($1->getName() + "," + $3->getName(), TEMPORARY_TYPE);
                                         paramType.push_back($3->getVarType());
                                 }
                 |       logic_expression
                                 {
+                                        // $$ = $1;
                                         paramType.push_back($1->getVarType());
                                 }
                 ;
