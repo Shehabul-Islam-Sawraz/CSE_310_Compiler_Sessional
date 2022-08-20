@@ -383,10 +383,16 @@ statement: var_declaration
                                         // $$ = new SymbolInfo("for(" + $3->getName() + $5->getName() + $7->getName() + ")" + $10->getName(), TEMPORARY_TYPE);
                                         endForLoop();
                                 }
-                |       IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
-                                {}
-                |       IF LPAREN expression RPAREN statement ELSE statement
-                                {}
+                |       IF LPAREN expression RPAREN create_if_block statement %prec LOWER_THAN_ELSE
+                                {
+                                        // $$ = new SymbolInfo("if(" + $3->getName() + ")" + $6->getName(), TEMPORARY_TYPE);
+                                        endIfBlock($5->getName());
+                                }
+                |       IF LPAREN expression RPAREN create_if_block statement ELSE { createElseBlock($5->getName()); } statement
+                                {
+                                        // $$ = new SymbolInfo("if(" + $3->getName() + ")" + $6->getName() + "else\n" + $9->getName(), TEMPORARY_TYPE);
+                                        endIfElseBlock();
+                                }
                 |       WHILE LPAREN expression RPAREN statement
                                 {}
                 |       PRINTLN LPAREN ID RPAREN SEMICOLON
@@ -424,6 +430,12 @@ statement: var_declaration
                                 {
                                         //printErrorRecovery("; missing",statement,"RETURN expression");
                                         printError("; missing");
+                                }
+                ;
+
+create_if_block:
+                                {
+                                        $$ = createIfBlock();
                                 }
                 ;
 

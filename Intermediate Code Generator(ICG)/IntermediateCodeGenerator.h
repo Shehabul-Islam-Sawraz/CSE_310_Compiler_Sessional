@@ -13,7 +13,7 @@ int labelCount = 0;
 string forLoopIncDecCode = "";
 string forLoopExpressionCode = "";
 bool isForLoop = false;
-string forLoopStartLabel = "", forLoopEndLabel = "";
+string forLoopStartLabel = "", forLoopEndLabel = "", elseBlockEndLabel = "";
 
 ScopeTable *scope = nullptr;                  // Have to declare it in ICG header file
 SymbolTable *symbolTable = new SymbolTable(); // Have to declare it in ICG header file
@@ -571,4 +571,48 @@ void endForLoop()
     addInCodeSegment(forLoopIncDecCode);
     addInCodeSegment(forLoopExpressionCode);
     isForLoop = false;
+}
+
+SymbolInfo* createIfBlock()
+{
+    string labelIfTrue = newLabel();
+    string labelIfFalse = newLabel();
+    SymbolInfo *sym = new SymbolInfo(labelIfFalse, TEMPORARY_TYPE);
+    string code = "";
+    code += "\t\t; At line no " + to_string(line_count) + ": Evaluationg if statement" + NEWLINE;
+    code += "\t\tPOP AX" + "\t; Popped expression value from stack" + NEWLINE;
+    code += "\t\tCMP AX, 0" + "\t; Checking whether expression is true or false" + NEWLINE;
+    code += conditionalJump("JNE", labelIfTrue);
+    code += "\t\t; If expression is false then jump to the end of if block" + NEWLINE;
+    code += jumpInstant(labelIfFalse);
+    code += "\t\t" + labelIfTrue + ":" + NEWLINE;
+    addInCodeSegment(code);
+    return sym;
+}
+
+void endIfBlock(string label){
+    string code = "";
+    code += "\t\t; End label for if statement" + NEWLINE;
+    code += "\t\t" + label + ":" + NEWLINE;
+    addInCodeSegment(code);
+}
+
+void createElseBlock(string label)
+{
+    string endLabel = newLabel();
+    elseBlockEndLabel = endLabel;
+    string code = "";
+    code += "\t\t; If expression was true and statement is evaluated then jump to end label" + NEWLINE;
+    code += jumpInstant(endLabel);
+    code += "\t\t; Label for else block" + NEWLINE;
+    code += "\t\t" + label + ":" + NEWLINE;
+    addInCodeSegment(code);
+}
+
+void endIfElseBlock()
+{
+    string code = "";
+    code += "\t\t; End label for if else statement" + NEWLINE;
+    code += "\t\t" + elseBlockEndLabel + ":" + NEWLINE;
+    addInCodeSegment(code);
 }
