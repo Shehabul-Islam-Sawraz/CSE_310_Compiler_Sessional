@@ -651,3 +651,24 @@ void endWhileLoop()
     code += "\t\t" + whileLoopEndLabel + ":" + NEWLINE;
     addInCodeSegment(code);
 }
+
+void printId(SymbolInfo *sym)
+{
+    string code = "";
+    code += NEWLINE;
+    if(sym->isGlobal){
+        code += "PUSH " + sym->getName() + "\t; Passing " + sym->getName() + " to PRINT_NUM for printing it" + NEWLINE;
+    }
+    else{
+        code += "\t\tPUSH [BP+" + to_string(-1 * sym->getOffset()) + "]" + "\t; Passing " + sym->getName() + " to PRINT_NUM for printing it" + NEWLINE;
+    }
+    code += "\t\tCALL PRINT_NUM" + NEWLINE;
+    addInCodeSegment(code);
+}
+
+void returnFunction()
+{
+    string code = "";
+    code += "\t\tPOP AX" + "\t; Popped return value and saved it in AX" + NEWLINE;
+    addInCodeSegment(code);
+}

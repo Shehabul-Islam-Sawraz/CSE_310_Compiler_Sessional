@@ -400,37 +400,45 @@ statement: var_declaration
                                 }
                 |       PRINTLN LPAREN ID RPAREN SEMICOLON
                                 {
+                                        // $$ = new SymbolInfo("println(" + $3->getName() + ");", TEMPORARY_TYPE);
                                         checkExistance($3);
+                                        printId($3);
                                 }
                 |       RETURN expression SEMICOLON
                                 {
+                                        // $$ = new SymbolInfo("return " + $2->getName() + ";", TEMPORARY_TYPE);
                                         checkFuncReturnType($2);
-                                        $$->code += getExpressionCode($2);
+                                        returnFunction();
                                 }
                 |       RETURN SEMICOLON
                                 {
                                         /***
                                                 EXTRA RULE ADDED 
                                         ***/
+                                        // $$ = new SymbolInfo("return ;", TEMPORARY_TYPE);
                                         checkFuncReturnType();
                                 }
                 |       IF LPAREN error RPAREN statement %prec LOWER_THAN_ELSE
                                 {
+                                        // $$ = new SymbolInfo("if()" + $5->getName(), TEMPORARY_TYPE);
                                         //printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN RPAREN statement");
                                         printError("Invalid expression inside conditional if statement");
                                 }
                 |       IF LPAREN error RPAREN statement ELSE statement
                                 {
+                                        // $$ = new SymbolInfo("if()" + $5->getName() + "else\n" + $7->getName(), TEMPORARY_TYPE);
                                         //printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN RPAREN statement ELSE statement");
                                         printError("Invalid expression inside conditional if statement");
                                 }
                 |       error ELSE statement
                                 {
+                                        // $$ = new SymbolInfo("else\n" + $3->getName(), TEMPORARY_TYPE);
                                         //printErrorRecovery("Else conditional statement without an if",statement,"ELSE statement");
                                         printError("Else conditional statement without an if");
                                 }
                 |       RETURN expression error		
                                 {
+                                        // $$ = new SymbolInfo("return " + $2->getName(), TEMPORARY_TYPE);
                                         //printErrorRecovery("; missing",statement,"RETURN expression");
                                         printError("; missing");
                                 }
