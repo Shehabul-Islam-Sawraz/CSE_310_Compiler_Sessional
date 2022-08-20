@@ -207,7 +207,7 @@ void insertArr(SymbolInfo *sym, SymbolInfo *index)
 	if (symbolTable->getCurrentScope()->getId() != "1" && (error_count + syntax_error_count) == 0)
 	{
 		// writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
-		string code = "\t\tIn line no " + to_string(line_count) + ": Array named " + arr->getName() + " with size " + to_string(arrsize) + " declared";
+		string code = "\t\t; In line no " + to_string(line_count) + ": Array named " + arr->getName() + " with size " + to_string(arrsize) + " declared";
 		for (int i = 0; i < arraySize; i++)
 		{
 			code += "\n\t\tPUSH AX";
@@ -477,13 +477,15 @@ SymbolInfo *getUnaryOpVal(SymbolInfo *op, SymbolInfo *sym)
 	string uniop = op->getName();
 	SymbolInfo *opVal = new SymbolInfo("", "");
 	opVal = getConstValue(opVal, sym->getVarType());
-	if (sym->getVarType() == FLOAT_TYPE)
+
+	if (uniop == "-")
 	{
-		opVal->fltValue() = (uniop == "+") ? (sym->fltValue()) : -(sym->fltValue());
-	}
-	else if (sym->getVarType() == INT_TYPE)
-	{
-		opVal->intValue() = (uniop == "+") ? (sym->intValue()) : -(sym->intValue());
+		string code = "";
+		code += "\t\t; At line no " + to_string(line_count) + ": Negating " + sym->getName() + NEWLINE;
+		code += "\t\tPOP BX" + "\t; " + sym->getName() + " popped from stack" + NEWLINE;
+		code += "\t\tNEG BX" + "\t; Negating " + sym->getName() + NEWLINE;
+		code += "\t\tPUSH BX" + "\t; Saving result of -" + sym->getName() + " in stack" + NEWLINE;
+		addInCodeSegment(code);
 	}
 	return opVal;
 }
@@ -497,16 +499,18 @@ SymbolInfo *getNotOpVal(SymbolInfo *sym)
 	}
 	SymbolInfo *opVal = new SymbolInfo("", "");
 	opVal = getConstValue(opVal, INT_TYPE);
-	int ans = 0;
-	if (sym->getVarType() == INT_TYPE)
-	{
-		ans = sym->intValue();
-	}
-	else if (sym->getVarType() == FLOAT_TYPE)
-	{
-		ans = (int)sym->fltValue();
-	}
-	opVal->intValue() = !ans;
+	string labelFalse = newLabel();
+	string endLabel = newLabel();
+	string code = "";
+	code += "\t\t; At line no " + to_string(line_count) + ": Evaluating !" + sym->getName() + NEWLINE;
+	code += "\t\tPOP BX" + "\t; Popped " + sym->getName() + " from stack" + NEWLINE;
+	code += "\t\tCMP BX,0" + "\t; Comparing " + sym->getName() + " with 0" + NEWLINE;
+	code += "\t\tJNE " + labelFalse + "\t; Go to label " + labelFalse + " if BX is not 0" + NEWLINE;
+	// code += "\t\tPUSH 1" + "\t; Pushing 0 in stack if BX is 0" + NEWLINE;
+	code += jumpInstant(endLabel);
+	code += declareLabel(labelFalse, false);
+	code += declareLabel(endLabel, true);
+	addInCodeSegment(code);
 	return opVal;
 }
 
@@ -621,6 +625,7 @@ SymbolInfo *getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
 		return nullValue();
 	}
 	string code = "";
+	code += "\t\t; At line no " + to_string(line_count) + ": Assigning " + right->getName() + " into " + left->getName() + NEWLINE;
 	code += "\t\tPOP BX" + "\t; " + right->getName() + " popped from stack\n";
 	if (left->isVariable())
 	{

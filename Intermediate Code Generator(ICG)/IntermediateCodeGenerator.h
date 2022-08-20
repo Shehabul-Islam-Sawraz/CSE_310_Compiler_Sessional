@@ -251,14 +251,14 @@ string operatorToReg(string command, string reg, SymbolInfo *sym)
 string declareLabel(string label, bool conditionValue)
 {
     string code = "";
-    code += "\t\tJMP " + label + NEWLINE;
+    code += "\t\t" + label + ":" + NEWLINE;
     if (conditionValue)
     {
-        code += "\t\tPUSH 1\t; Saving condition value to be true" + NEWLINE;
+        code += "\t\tPUSH 1\t; Saving expression value to be true" + NEWLINE;
     }
     else
     {
-        code += "\t\tPUSH 0\t; Saving condition value to be false" + NEWLINE;
+        code += "\t\tPUSH 0\t; Saving expression value to be false" + NEWLINE;
     }
     return code;
 }
@@ -329,7 +329,7 @@ void addRelOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
     string labelIfFalse = newLabel();
 
     string code = "";
-    code += "\t\t; At line no  " + to_string(line_count) + " checking if " + left->getName() + op + right->getName() + "\n";
+    code += "\t\t; At line no  " + to_string(line_count) + ": Checking if " + left->getName() + op + right->getName() + "\n";
     code += "\t\tPOP BX" + "\t; Popped out " + right->getName() + " from stack\n";
     code += "\t\tPOP AX" + "\t; Popped out " + left->getName() + " from stack\n";
     code += "\t\tCMP AX, BX" + "\t; Comparing " + left->getName() + " with " + right->getName() + "\n";
