@@ -357,20 +357,32 @@ statements: statement
                 ;
 
 statement: var_declaration
+                                {
+                                        // $$ = $1;
+                                }
                 |       expression_statement
+                                {
+                                        // $$ = $1;
+                                }
                 |       compound_statement
+                                {
+                                        // $$ = $1;
+                                }
                 |       func_definition
                                 {
-                                        //printErrorRecovery("Invalid scoping of function", statement, "func_definition");
+                                        // printErrorRecovery("Invalid scoping of function", statement, "func_definition");
                                         printError("Invalid scoping of function");
                                 }
                 |       func_declaration
                                 {
-                                        //printErrorRecovery("Invalid scoping of function", statement, "func_declaration");
+                                        // printErrorRecovery("Invalid scoping of function", statement, "func_declaration");
                                         printError("Invalid scoping of function");
                                 }
-                |       FOR LPAREN expression_statement expression_statement expression RPAREN statement
-                                {}
+                |       FOR LPAREN expression_statement { forLoopStart(); } expression_statement { forLoopConditionCheck(); } expression { gotoNextStepInForLoop($7->getName()); } RPAREN statement
+                                {
+                                        // $$ = new SymbolInfo("for(" + $3->getName() + $5->getName() + $7->getName() + ")" + $10->getName(), TEMPORARY_TYPE);
+                                        endForLoop();
+                                }
                 |       IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
                                 {}
                 |       IF LPAREN expression RPAREN statement ELSE statement
@@ -422,7 +434,7 @@ expression_statement: SEMICOLON
                 |       expression SEMICOLON
                                 {
                                         $$ = new SymbolInfo($1->getName() + ";", TEMPORARY_TYPE);
-                                        
+                                        handleExtraExpressionPush($1->getName());
                                 }
                 ;
 

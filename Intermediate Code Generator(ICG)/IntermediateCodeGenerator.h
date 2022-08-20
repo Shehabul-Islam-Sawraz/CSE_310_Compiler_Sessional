@@ -10,6 +10,10 @@ ofstream asmFile;
 
 int tempCount = 0, maxTempCount = -1;
 int labelCount = 0;
+string forLoopIncDecCode = "";
+string forLoopExpressionCode = "";
+bool isForLoop = false;
+string forLoopStartLabel = "", forLoopEndLabel = "";
 
 ScopeTable *scope = nullptr;                  // Have to declare it in ICG header file
 SymbolTable *symbolTable = new SymbolTable(); // Have to declare it in ICG header file
@@ -164,13 +168,21 @@ void addGlobalVarInDataSegment(string var, int arrsize = 0, bool isArray = false
 
 void addInCodeSegment(string code)
 {
+    // If isForLoop = true, then we have got the expression code. We are not
+    // adding it to code segment as we want the expression is evaluated after 
+    // the for loop statement is executed
     if ((error_count + syntax_error_count) == 0)
     {
-        string str = code;
-        replaceByNewLine(str);
-        // codesegment+=str;
-        setValue(code_segment, popValue(code_segment) + str);
-        writeInCodeSegment(str);
+        if(!isForLoop){
+            string str = code;
+            replaceByNewLine(str);
+            // codesegment+=str;
+            setValue(code_segment, popValue(code_segment) + str);
+            writeInCodeSegment(str);
+        }
+        else{
+            forLoopIncDecCode = code;
+        }
     }
 }
 
@@ -506,4 +518,57 @@ void evaluateArrayVariable(SymbolInfo *var, string index)
     code += "\t\tPUSH AX" + "\t; Pushing the value of the array element at index " + index->getName() + NEWLINE;
     code += "\t\tPUSH BX" + "\t; Pushing the index of the array\n";
     addInCodeSegment(code);
+}
+
+void handleExtraExpressionPush(string name)
+{
+    // There is always an extra push after every expression
+    // So, we need to pop it out after we get a semicolon after an expression
+    string code = "";
+    code += "\t\tPOP AX" + "\t; Popped out " + name + NEWLINE;
+    addInCodeSegment(code);
+}
+
+void forLoopStart()
+{
+    string startLabel = newLabel();
+    forLoopStartLabel = startLabel;
+    string code = "";
+    code += "\t\t; At line no " + to_string(line_count) + ": Starting for loop" + NEWLINE;
+    code += "\t\t" + startLabel + ":\t; For loop start label" + NEWLINE;
+    addInCodeSegment(code);
+}
+
+void forLoopConditionCheck(){
+    string labelIfTrue = newLabel();
+    string endLabel = newLabel();
+    forLoopEndLabel = endLabel;
+    string code = "";
+    // We have already popped AX from stack after getting expression_statement. This AX contains
+    // the result of the condition inside for loop
+    code += "\t\tCMP AX, 0" + "\t; Comparing if the condition is true or false" + NEWLINE;
+    // If AX != 0, then statement will compile, otherwise go to end label
+    code += conditionalJump("JNE", labelIfTrue);
+    code += "\t\t; If false then jump to the end label of for loop" + NEWLINE;
+    code += jumpInstant(endLabel);
+    code += "\t\t" + labelIfTrue + ":" + NEWLINE;
+    addInCodeSegment(code);
+    isForLoop = true; // We are making it true, so that the expression is evaluated after the for loop statement is executed
+}
+
+void gotoNextStepInForLoop(string var)
+{
+    string code = "";
+    code += "\t\tPOP AX" + "\t; Popped " + var + " from stack" + NEWLINE;
+    code += "\t\tJMP " + forLoopStartLabel + "\t; Jump back to for loop" + NEWLINE;
+    code += "\t\t; End label of for loop" + NEWLINE;
+    code += "\t\t" + forLoopEndLabel + ":" + NEWLINE;
+    forLoopExpressionCode = code;
+}
+
+void endForLoop()
+{
+    addInCodeSegment(forLoopIncDecCode);
+    addInCodeSegment(forLoopExpressionCode);
+    isForLoop = false;
 }
