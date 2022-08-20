@@ -416,9 +416,14 @@ statement: var_declaration
                 ;
 
 expression_statement: SEMICOLON
-                                {}
+                                {
+                                        $$ = new SymbolInfo(";", TEMPORARY_TYPE);
+                                }
                 |       expression SEMICOLON
-                                {}
+                                {
+                                        $$ = new SymbolInfo($1->getName() + ";", TEMPORARY_TYPE);
+                                        
+                                }
                 ;
 
 variable: ID            

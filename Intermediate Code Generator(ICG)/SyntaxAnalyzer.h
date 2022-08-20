@@ -444,6 +444,11 @@ SymbolInfo *getConstValue(SymbolInfo *sym, string varType)
 {
 	sym->setDecType(VARIABLE);
 	sym->setVarType(varType);
+	if(varType == INT_TYPE){
+		string code = "";
+        code += "\t\tPUSH " + $1->getName();
+		addInCodeSegment(code);
+	}
 	return sym;
 }
 
@@ -774,6 +779,12 @@ SymbolInfo *getFuncCallValue(SymbolInfo *sym)
 		}
 		ans = getConstValue("", temp->getFuncRetType());
 	}
+
+	string code = "";
+	code += callFunction(sym->getName());
+	code += "\t\tPUSH AX" + "\t; Return value of function named " + sym->getName() + " pushed in stack" + NEWLINE;
+	addInCodeSegment(code);
+
 	clearFunctionParam();
 	return ans;
 }

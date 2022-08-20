@@ -263,6 +263,10 @@ string declareLabel(string label, bool conditionValue)
     return code;
 }
 
+string callFunction(string label){
+    return "\t\tCALL " + label + "\t; Function with name " + label + " called" + NEWLINE;
+}
+
 string conditionalJump(string condition, string label)
 {
     return "\t\t" + condition + " " + label + NEWLINE;
