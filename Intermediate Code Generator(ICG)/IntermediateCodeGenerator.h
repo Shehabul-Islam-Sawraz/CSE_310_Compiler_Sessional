@@ -14,6 +14,7 @@ string forLoopIncDecCode = "";
 string forLoopExpressionCode = "";
 bool isForLoop = false;
 string forLoopStartLabel = "", forLoopEndLabel = "", elseBlockEndLabel = "";
+string whileLoopStartLabel = "", whileLoopEndLabel = "";
 
 ScopeTable *scope = nullptr;                  // Have to declare it in ICG header file
 SymbolTable *symbolTable = new SymbolTable(); // Have to declare it in ICG header file
@@ -546,7 +547,7 @@ void forLoopConditionCheck(){
     string code = "";
     // We have already popped AX from stack after getting expression_statement. This AX contains
     // the result of the condition inside for loop
-    code += "\t\tCMP AX, 0" + "\t; Comparing if the condition is true or false" + NEWLINE;
+    code += "\t\tCMP AX, 0" + "\t; Checking if the condition is true or false" + NEWLINE;
     // If AX != 0, then statement will compile, otherwise go to end label
     code += conditionalJump("JNE", labelIfTrue);
     code += "\t\t; If false then jump to the end label of for loop" + NEWLINE;
@@ -614,5 +615,39 @@ void endIfElseBlock()
     string code = "";
     code += "\t\t; End label for if else statement" + NEWLINE;
     code += "\t\t" + elseBlockEndLabel + ":" + NEWLINE;
+    addInCodeSegment(code);
+}
+
+void whileLoopStart()
+{
+    string startLabel = newLabel();
+    whileLoopStartLabel = startLabel;
+    string code = "";
+    code += "\t\t; At line no " + to_string(line_count) + ": Starting while loop" + NEWLINE;
+    code += "\t\t" + startLabel + ":\t; While loop start label" + NEWLINE;
+    addInCodeSegment(code);
+}
+
+void whileLoopConditionCheck(string var){
+    string labelIfTrue = newLabel();
+    string endLabel = newLabel();
+    whileLoopEndLabel = endLabel;
+    string code = "";
+    code += "\t\tPOP AX" + "\t; Popped " + var + " from stack" + NEWLINE;
+    code += "\t\tCMP AX, 0" + "\t; Checking if the condition is true or false" + NEWLINE;
+    // If AX != 0, then statement will compile, otherwise go to end label
+    code += conditionalJump("JNE", labelIfTrue);
+    code += "\t\t; If false then jump to the end label of while loop" + NEWLINE;
+    code += jumpInstant(endLabel);
+    code += "\t\t" + labelIfTrue + ":" + NEWLINE;
+    addInCodeSegment(code);
+}
+
+void endWhileLoop()
+{
+    string code = "";
+    code += "\t\tJMP " + whileLoopStartLabel + "\t; Jump back to while loop" + NEWLINE;
+    code += "\t\t; End label of while loop" + NEWLINE;
+    code += "\t\t" + whileLoopEndLabel + ":" + NEWLINE;
     addInCodeSegment(code);
 }

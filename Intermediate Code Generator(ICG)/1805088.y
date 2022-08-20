@@ -393,8 +393,11 @@ statement: var_declaration
                                         // $$ = new SymbolInfo("if(" + $3->getName() + ")" + $6->getName() + "else\n" + $9->getName(), TEMPORARY_TYPE);
                                         endIfElseBlock();
                                 }
-                |       WHILE LPAREN expression RPAREN statement
-                                {}
+                |       WHILE { whileLoopStart(); } LPAREN expression { whileLoopConditionCheck($4->getName()); } RPAREN statement
+                                {
+                                        // $$ = new SymbolInfo("while(" + $4->getName() + ")" + $7->getName(), TEMPORARY_TYPE);
+                                        endWhileLoop();
+                                }
                 |       PRINTLN LPAREN ID RPAREN SEMICOLON
                                 {
                                         checkExistance($3);
