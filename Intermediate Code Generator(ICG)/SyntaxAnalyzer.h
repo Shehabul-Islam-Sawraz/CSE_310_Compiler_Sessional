@@ -533,6 +533,23 @@ SymbolInfo *getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 	return opVal;
 }
 
+string getMulopOperator(string mulop)
+{
+	if (mulop == "%")
+	{
+		return "MODULUS";
+	}
+	else if (mulop == "*")
+	{
+		return "MULTIPLICATION";
+	}
+	else
+	{
+		return "DIVISION";
+	}
+	return "";
+}
+
 SymbolInfo *getMulOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 {
 	if (left->getVarType() == VOID_TYPE || right->getVarType() == VOID_TYPE)
@@ -546,6 +563,10 @@ SymbolInfo *getMulOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 		printError("Non-Integer operand on modulus operator");
 		return nullValue();
 	}
+	if (left->getVarType() != right->getVarType())
+	{
+		printWarning("Type mismatch");
+	}
 	SymbolInfo *opVal = new SymbolInfo("", "");
 	if (left->getVarType() == FLOAT_TYPE || right->getVarType() == FLOAT_TYPE)
 	{
@@ -557,114 +578,43 @@ SymbolInfo *getMulOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 	}
 	if (mulop == "%")
 	{
-		if (left->getVarType() == INT_TYPE && right->getVarType() == INT_TYPE && right->intValue())
-		{
-			opVal->intValue() = left->intValue() % right->intValue();
-		}
-		else if (left->getVarType() == INT_TYPE && right->getVarType() == INT_TYPE && right->intValue() == 0)
+		if (left->getVarType() == INT_TYPE && right->getVarType() == INT_TYPE && right->getName() == "0")
 		{
 			printError("Modulus by Zero");
 		}
 	}
-	else if (mulop == "*")
+	if (mulop == "/" && right->getName() == "0")
 	{
-		if (left->getVarType() == FLOAT_TYPE)
+		printError("Divide by zero");
+	}
+	string operation = getMulopOperator();
+	string code = "";
+	code += "\t\t; " + operation + " operation between " + left->getName() " and " + right->getName() + NEWLINE;
+	code += "\t\tPOP BX" + "\t; " + right->getName() + " popped from stack" + NEWLINE;
+	code += "\t\tPOP AX" + "\t; " + left->getName() + " popped from stack" + NEWLINE;
+	if (mulop == "*")
+	{
+		// AX = AX * BX
+		code += "\t\tIMUL BX" + "\t; Multiplying " + left->getName() + " and " + right->getName() + NEWLINE;
+	}
+	else
+	{
+		code += "\t\tXOR DX, DX" + "\t; Setting value of DX to 0" + NEWLINE;
+		code += "\t\tIDIV BX" + "\t; Dividing " + left->getName() + " by " + right->getName() + NEWLINE;
+		// AX = AX / BX and DX = AX % BX
+		if (mulop == "%")
 		{
-			if (right->getVarType() == INT_TYPE)
-			{
-				opVal->fltValue() = left->fltValue() * right->intValue();
-			}
-			else
-			{
-				opVal->fltValue() = left->fltValue() * right->fltValue();
-			}
-		}
-		else if (right->getVarType() == FLOAT_TYPE)
-		{
-			if (left->getVarType() == INT_TYPE)
-			{
-				opVal->fltValue() = left->intValue() * right->fltValue();
-			}
-			else
-			{
-				opVal->fltValue() = left->fltValue() * right->fltValue();
-			}
-		}
-		else if (right->getVarType() == INT_TYPE && left->getVarType() == INT_TYPE)
-		{
-			opVal->setVarType(INT_TYPE);
-			opVal->intValue() = left->intValue() * right->intValue();
+			code += "\t\tMOV AX, DX" + "\t; Saving remainder after division from DX to AX" + NEWLINE;
 		}
 	}
-	else if (mulop == "/")
-	{
-		if (left->getVarType() == FLOAT_TYPE)
-		{
-			if (right->getVarType() == INT_TYPE)
-			{
-				if (right->intValue() != 0)
-				{
-					opVal->fltValue() = left->fltValue() / (right->intValue() * 1.0);
-				}
-				else
-				{
-					opVal->fltValue() = INFINITY_FLOAT;
-				}
-			}
-			else if (right->getVarType() == FLOAT_TYPE)
-			{
-				if (right->fltValue() != 0)
-				{
-					opVal->fltValue() = left->fltValue() / right->fltValue();
-				}
-				else
-				{
-					opVal->fltValue() = INFINITY_FLOAT;
-				}
-			}
-		}
-		else if (right->getVarType() == FLOAT_TYPE)
-		{
-			if (left->getVarType() == INT_TYPE)
-			{
-				if (right->fltValue() != 0)
-				{
-					opVal->fltValue() = (left->intValue() * 1.0) / right->fltValue();
-				}
-				else
-				{
-					opVal->fltValue() = INFINITY_FLOAT;
-				}
-			}
-			else if (left->getVarType() == FLOAT_TYPE)
-			{
-				if (right->fltValue() != 0)
-				{
-					opVal->fltValue() = (left->fltValue()) / right->fltValue();
-				}
-				else
-				{
-					opVal->fltValue() = INFINITY_FLOAT;
-				}
-			}
-		}
-		else if (right->getVarType() == INT_TYPE && left->getVarType() == INT_TYPE)
-		{
-			if (right->intValue() != 0)
-			{
-				opVal->intValue() = left->intValue() / right->intValue();
-			}
-			else
-			{
-				opVal->fltValue() = INFINITY_INT;
-			}
-		}
-	}
+	code += "\t\tPUSH AX" + "\t; Saving result of " + left->getName() + mulop + right->getName() + " in stack" + NEWLINE;
+	addInCodeSegment(code);
 	return opVal;
 }
 
 SymbolInfo *getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
-{ // Handles assignment expressions e.g. x=2
+{
+	// Handles assignment expressions e.g. x=2
 	if (left->getVarType() == VOID_TYPE || right->getVarType() == VOID_TYPE)
 	{
 		printError("Assign Operation on void type");
