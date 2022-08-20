@@ -722,14 +722,18 @@ SymbolInfo *getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
 				printWarning("Assigning float value to integer type array");
 			}
 		}
+		code += "\t\tPUSH BP" + "\t; Saving value of BP in stack, so that we can restore it's value later" + NEWLINE;
+		code += "\t\tMOV BP, AX" + "\t; Saving address of the array index in BP to access array from stack" + NEWLINE;
+
 		if (left->isGlobal)
 		{
-			code += "\t\tMOV " + left->getName() + "[AX], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
+			code += "\t\tMOV " + left->getName() + "[BP], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
 		}
 		else
 		{
-			code += "\t\tMOV [AX], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
+			code += "\t\tMOV [BP], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
 		}
+		code += "\t\tPOP BP" + "\t; Restoring value of BP" + NEWLINE;
 	}
 	else if (left->isFunction())
 	{

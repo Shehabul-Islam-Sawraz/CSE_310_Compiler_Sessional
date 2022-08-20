@@ -486,7 +486,7 @@ void evaluateArrayVariable(SymbolInfo *var, string index)
     {
         code += "\t\tPUSH BP" + "\t; Saving value of BP in stack, so that we can restore it's value later" + NEWLINE;
         code += "\t\tMOV BP, BX" + "\t; Saving address of the array index in BP to access array from stack" + NEWLINE;
-        code += "\t\tMOV AX, " + var->getName() + "[BP]" + "\t; Getting the value of the array at index BX\n";
+        code += "\t\tMOV AX, " + var->getName() + "[BP]" + "\t; Getting the value of the array from index BP\n";
     }
     else
     {
@@ -494,7 +494,7 @@ void evaluateArrayVariable(SymbolInfo *var, string index)
         code += "\t\tADD BX, BP" + "\t; Adding BP to BX to get the address of the array\n";
         code += "\t\tPUSH BP" + "\t; Saving value of BP in stack, so that we can restore it's value later" + NEWLINE;
         code += "\t\tMOV BP, BX" + "\t; Saving address of the array index in BP to access array from stack" + NEWLINE;
-        code += "\t\tMOV AX, [BP]" + "\t; Getting the value of the array at address BX\n";
+        code += "\t\tMOV AX, [BP]" + "\t; Getting the value of the array at address BP\n";
     }
     code += "\t\tPOP BP" + "\t; Restoring value of BP" + NEWLINE;
     // Pushing the index and value of the array element on the stack
