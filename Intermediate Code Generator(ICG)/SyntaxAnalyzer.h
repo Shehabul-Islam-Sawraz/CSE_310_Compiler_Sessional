@@ -79,6 +79,7 @@ SymbolInfo *insertIntoSymbolTable(SymbolInfo *symbol)
 	scope->insertSymbol(symbol->getName(), symbol->getType(), (int)(hashValue(symbol->getName()) % NoOfBuckets), symbol->getVarType(), symbol->getDecType());
 	SymbolInfo *temp = symbolTable->lookUp(symbol->getName(), (int)(hashValue(symbol->getName()) % NoOfBuckets));
 	temp->setScopeID(scope->getId());
+	cout << "Id for " + temp->getName() + " is " + (temp->getScopeID()) << endl;
 	return temp;
 }
 
@@ -135,21 +136,23 @@ SymbolInfo *insertVar(SymbolInfo *var, bool isArray = false)
 			// addVarInDataSegment(temp->getName());
 			if (!isArray)
 			{
-				if (symbolTable->getCurrentScope()->getId() != 1 && (error_count + syntax_error_count) == 0)
+				if (temp->getScopeID() != "1" && (error_count + syntax_error_count) == 0)
 				{
+					cout << "Ahhare get id hoilo: " + temp->getScopeID() << endl;
 					// writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
 					string code = "\t\tPUSH BX\t; In line no " + to_string(line_count) + ": " + temp->getName() + " declared";
 					temp->setOffset(offset);
 					offset += 2;
 					addInCodeSegment(code);
 				}
-				else if (symbolTable->getCurrentScope()->getId() == 1)
+				else if (temp->getScopeID() == "1" && (error_count + syntax_error_count) == 0)
 				{
+					cout << "Ahhare get id hoilo-------: " + temp->getScopeID() << endl;
 					if (variableType == FLOAT_TYPE)
 					{
 						printError("Float type global variable is not supported!!");
 					}
-					if ((error_count + syntax_error_count) == 0)
+					if ((error_count + syntax_error_count) > 0)
 					{
 						return nullValue();
 					}
@@ -197,7 +200,7 @@ void insertArr(SymbolInfo *sym, SymbolInfo *index)
 	// 	arr->floatValues.push_back(0);
 	// }
 	int arrsize = arr->getArrSize();
-	if (symbolTable->getCurrentScope()->getId() != 1 && (error_count + syntax_error_count) == 0)
+	if (arr->getScopeID() != "1" && (error_count + syntax_error_count) == 0)
 	{
 		// writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
 		string code = "\t\t; In line no " + to_string(line_count) + ": Array named " + arr->getName() + " with size " + to_string(arrsize) + " declared";
@@ -210,7 +213,7 @@ void insertArr(SymbolInfo *sym, SymbolInfo *index)
 		offset += arrsize * 2;
 		addInCodeSegment(code);
 	}
-	else if (symbolTable->getCurrentScope()->getId() == 1)
+	else if (arr->getScopeID() == "1")
 	{
 		if (variableType == FLOAT_TYPE)
 		{

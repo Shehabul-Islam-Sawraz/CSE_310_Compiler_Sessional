@@ -67,7 +67,6 @@ void addKeywords(){
 void addConstInt(string token){
     //printTokenWithSymbol(token);
     insertIntoYylVal(token,yytext);
-    cout << "yytext is: " << yytext << endl;
 }
 
 void addConstFloat(string token){

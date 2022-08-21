@@ -21,8 +21,9 @@ int labelCount = 0;
 string forLoopIncDecCode = "";
 string forLoopExpressionCode = "";
 bool isForLoop = false;
-string forLoopStartLabel = "", forLoopEndLabel = "";
+stack<string> forLoopEndLabel, forLoopStartLabel;
 stack<string> elseBlockEndLabel;
+stack<string> forLoop;
 string whileLoopStartLabel = "", whileLoopEndLabel = "";
 
 ScopeTable *scope = nullptr;                  // Have to declare it in ICG header file
@@ -191,6 +192,7 @@ string GET_ASM_VAR_NAME(string var)
 void addGlobalVarInDataSegment(string var, int arrsize = 0, bool isArray = false)
 {
     // string code = GET_ASM_VAR_NAME(var) + DEFINE_WORD + "?";
+    cout << "eikhane ashche ree bhaoi-------" << endl;
     string code = "";
     if (!isArray)
     {
@@ -814,8 +816,9 @@ void handleExtraExpressionPush(string name)
 
 void forLoopStart()
 {
+    // forLoop.push("");
     string startLabel = newLabel();
-    forLoopStartLabel = startLabel;
+    forLoopStartLabel.push(startLabel);
     string code = "";
     code += "\t\t; At line no " + to_string(line_count) + ": Starting for loop" + NEWLINE;
     code += "\t\t" + startLabel + ":\t; For loop start label" + NEWLINE;
@@ -825,7 +828,7 @@ void forLoopStart()
 void forLoopConditionCheck(){
     string labelIfTrue = newLabel();
     string endLabel = newLabel();
-    forLoopEndLabel = endLabel;
+    forLoopEndLabel.push(endLabel);
     string code = "";
     // We have already popped AX from stack after getting expression_statement. This AX contains
     // the result of the condition inside for loop
@@ -843,17 +846,33 @@ void gotoNextStepInForLoop(string var)
 {
     string code = "";
     code += "\t\tPOP AX" + string("\t; Popped ") + var + " from stack" + NEWLINE;
-    code += "\t\tJMP " + forLoopStartLabel + "\t; Jump back to for loop" + NEWLINE;
-    code += "\t\t; End label of for loop" + NEWLINE;
-    code += "\t\t" + forLoopEndLabel + ":" + NEWLINE;
-    forLoopExpressionCode += code;
+    if(!forLoopStartLabel.empty()){
+        code += "\t\tJMP " + forLoopStartLabel.top() + "\t; Jump back to for loop" + NEWLINE;
+        forLoopStartLabel.pop();
+    }
+    if(!forLoopEndLabel.empty()){
+        code += "\t\t; End label of for loop" + NEWLINE;
+        code += "\t\t" + forLoopEndLabel.top() + ":" + NEWLINE;
+        forLoopEndLabel.pop();
+    }
+    forLoopExpressionCode = forLoopIncDecCode + code;
+    // string str = forLoop.top();
+    //str = forLoopExpressionCode + str;
+    forLoop.push(forLoopExpressionCode);
+    forLoopIncDecCode = "";
+    forLoopExpressionCode = "";
     isForLoop = false;
 }
 
 void endForLoop()
 {
-    addInCodeSegment(forLoopIncDecCode);
-    addInCodeSegment(forLoopExpressionCode);
+    //addInCodeSegment(forLoopIncDecCode);
+    //addInCodeSegment(forLoopExpressionCode);
+    
+    if(!forLoop.empty()){
+        addInCodeSegment(forLoop.top());
+        forLoop.pop();
+    }
     forLoopIncDecCode = "";
     forLoopExpressionCode = "";
 }
