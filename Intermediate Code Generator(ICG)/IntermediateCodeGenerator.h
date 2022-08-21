@@ -21,7 +21,8 @@ int labelCount = 0;
 string forLoopIncDecCode = "";
 string forLoopExpressionCode = "";
 bool isForLoop = false;
-string forLoopStartLabel = "", forLoopEndLabel = "", elseBlockEndLabel = "";
+string forLoopStartLabel = "", forLoopEndLabel = "";
+stack<string> elseBlockEndLabel;
 string whileLoopStartLabel = "", whileLoopEndLabel = "";
 
 ScopeTable *scope = nullptr;                  // Have to declare it in ICG header file
@@ -884,7 +885,7 @@ void endIfBlock(string label){
 void createElseBlock(string label)
 {
     string endLabel = newLabel();
-    elseBlockEndLabel = endLabel;
+    elseBlockEndLabel.push(endLabel);
     string code = "";
     code += "\t\t; If expression was true and statement is evaluated then jump to end label" + NEWLINE;
     code += jumpInstant(endLabel);
@@ -896,9 +897,12 @@ void createElseBlock(string label)
 void endIfElseBlock()
 {
     string code = "";
-    code += "\t\t; End label for if else statement" + NEWLINE;
-    code += "\t\t" + elseBlockEndLabel + ":" + NEWLINE;
-    addInCodeSegment(code);
+    if(!elseBlockEndLabel.empty()){
+        code += "\t\t; End label for if else statement" + NEWLINE;
+        code += "\t\t" + elseBlockEndLabel.top() + ":" + NEWLINE;
+        elseBlockEndLabel.pop();
+        addInCodeSegment(code);
+    }
 }
 
 void whileLoopStart()
@@ -933,6 +937,8 @@ void endWhileLoop()
     code += "\t\t; End label of while loop" + NEWLINE;
     code += "\t\t" + whileLoopEndLabel + ":" + NEWLINE;
     addInCodeSegment(code);
+    whileLoopStartLabel = "";
+    whileLoopEndLabel = "";
 }
 
 void printId(SymbolInfo *sym)
