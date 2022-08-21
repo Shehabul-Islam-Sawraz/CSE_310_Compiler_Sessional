@@ -112,7 +112,7 @@ void writeInDataSegment()
 {
     asmFile.close();
     asmFile.open("code.asm");
-    // asmFile << popValue(init_asm_model);
+    asmFile << popValue(init_asm_model);
     asmFile << popValue(data_segment);
     asmFile << popValue(code_segment);
 }
@@ -195,7 +195,7 @@ string getLabelForFunction(string func_name)
 void init_model()
 {
     string code = ".MODEL SMALL\r\n";
-    code += "\r\n.STACk 100H\r\n";
+    code += "\r\n.STACk 800H\r\n";
     setValue(init_asm_model, code);
     setValue(data_segment, "\r\n.DATA \r\n");
     setValue(code_segment, "\r\n.CODE\r\n");
@@ -768,5 +768,68 @@ void returnFunction()
 {
     string code = "";
     code += "\t\tPOP AX" + "\t; Popped return value and saved it in AX" + NEWLINE;
+    addInCodeSegment(code);
+}
+
+void writeProcPrintln() {
+    string code = "";
+    code = "\t;println(n)\n";
+    code += 
+    "\tPRINT_INTEGER PROC NEAR\n\
+        PUSH BP             ;Saving BP\n\
+        MOV BP, SP          ;BP points to the top of the stack\n\
+        MOV BX, [BP + 4]    ;The number to be printed\n\
+        ;if(BX < -1) then the number is positive\n\
+        CMP BX, 0\n\
+        JGE POSITIVE\n\
+        ;else, the number is negative\n\
+        MOV AH, 2           \n\
+        MOV DL, '-'         ;Print a '-' sign\n\
+        INT 21H\n\
+        NEG BX              ;make BX positive\n\
+        POSITIVE:\n\
+        MOV AX, BX\n\
+        MOV CX, 0        ;Initialize character count\n\
+        PUSH_WHILE:\n\
+            XOR DX, DX  ;clear DX\n\
+            MOV BX, 10  ;BX has the divisor //// AX has the dividend\n\
+            DIV BX\n\
+            ;quotient is in AX and remainder is in DX\n\
+            PUSH DX     ;Division by 10 will have a remainder less than 8 bits\n\
+            INC CX       ;CX++\n\
+            ;if(AX == 0) then break the loop\n\
+            CMP AX, 0\n\
+            JE END_PUSH_WHILE\n\
+            ;else continue\n\
+            JMP PUSH_WHILE\n\
+        END_PUSH_WHILE:\n\
+        MOV AH, 2\n\
+        POP_WHILE:\n\
+            POP DX      ;Division by 10 will have a remaainder less than 8 bits\n\
+            ADD DL, '0'\n\
+            INT 21H     ;So DL will have the desired character\n\
+            DEC CX       ;CX--\n\
+            ;if(CX <= 0) then end loop\n\
+            CMP CX, 0\n\
+            JLE END_POP_WHILE\n\
+            ;else continue\n\
+            JMP POP_WHILE\n\
+        END_POP_WHILE:\n\
+        ;Print newline\n\
+        MOV DL, 0DH\n\
+        INT 21H\n\
+        MOV DL, 0AH\n\
+        INT 21H\n\
+        POP BP          ; Restore BP\n\
+        RET 2\n\
+    PRINT_INTEGER ENDP";
+    
+    addInCodeSegment(code);
+}
+
+void endAssemblyCode()
+{
+    string code = "";
+    code += "END MAIN" + NEWLINE;
     addInCodeSegment(code);
 }

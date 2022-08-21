@@ -649,11 +649,20 @@ int main(int argc,char *argv[])
         fprintf(errorout,"\nTotal Syntax/Semantic Errors: %d\n",syntax_error_count);
         fprintf(errorout,"\nTotal Lexical Errors: %d\n",error_count);
         fprintf(errorout,"\nTotal Warning: %d\n",warning_count);
+        
+        if((error_count+syntax_error_count)>0){
+                asmFile.close();
+                asmFile.open("code.asm");
+        }
+        else{
+                writePrintNumProc();
+                endAssemblyCode();
+        }
 
         fclose(yyin);
 	fclose(logout);
         fclose(errorout);
         fclose(parserout);
-
+        asmFile.close();
 	return 0;
 }
