@@ -159,7 +159,7 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN {insertFunc($2,
 func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef($1, $2); startProcedure($2->getName());} compound_statement
                                 {
                                         //$$ = new SymbolInfo($1->getName() + " " + $2->getName() + "(" + $4->getName() + ")" + $7->getName(), "func_definition");
-                                        $$ = endFuncDef(true, $2->getName(), $2->getFuncRetType());
+                                        $$ = endFuncDef(true, $2->getName(), $1->getName());
                                         writeENDPForFunc($2->getName());
                                         // $$ = new SymbolInfo("",TEMPORARY_TYPE);
                                         // offset = offsets.back();
@@ -173,7 +173,7 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef(
                 |       type_specifier ID LPAREN RPAREN {addFunctionDef($1, $2); startProcedure($2->getName());} compound_statement
                                 {
                                         //$$ = new SymbolInfo($1->getName() + " " + $2->getName() + "()" + $6->getName(), "func_definition");
-                                        $$ = endFuncDef(true, $2->getName(), $2->getFuncRetType());
+                                        $$ = endFuncDef(true, $2->getName(), $1->getName());
                                         writeENDPForFunc($2->getName());
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
                                         printRuleAndCode(func_definition,"type_specifier ID LPAREN RPAREN compound_statement");

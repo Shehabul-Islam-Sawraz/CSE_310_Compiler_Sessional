@@ -14,7 +14,8 @@
         "stack": "c",
         "string": "cpp",
         "iostream": "c",
-        "ostream": "c"
+        "ostream": "c",
+        "vector": "c"
     },
     "liveServer.settings.port": 5501
 }

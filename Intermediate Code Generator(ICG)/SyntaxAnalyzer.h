@@ -135,14 +135,10 @@ SymbolInfo *insertVar(SymbolInfo *var, bool isArray = false)
 			// addVarInDataSegment(temp->getName());
 			if (!isArray)
 			{
-				cout << "Eikhane ashche" << endl;
-				cout << symbolTable->getCurrentScope()->getId() << endl;
 				if (symbolTable->getCurrentScope()->getId() != 1 && (error_count + syntax_error_count) == 0)
 				{
 					// writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
 					string code = "\t\tPUSH BX\t; In line no " + to_string(line_count) + ": " + temp->getName() + " declared";
-					cout << offset << endl;
-					cout << "In insertVar setting offset of variable " + temp->getName() + " to: " + to_string(offset) << endl;
 					temp->setOffset(offset);
 					offset += 2;
 					addInCodeSegment(code);
@@ -344,7 +340,6 @@ SymbolInfo *getVariable(SymbolInfo *sym)
 		var->setVarType(temp->getVarType());
 		var->setType(TEMPORARY_TYPE);
 		var->setOffset(temp->getOffset());
-		cout << "Offset for temp is: " + to_string(temp->getOffset()) << endl;
 		var->isGlobal = temp->isGlobal;
 		string code = "";
 		if (var->isGlobal)
@@ -353,9 +348,7 @@ SymbolInfo *getVariable(SymbolInfo *sym)
 		}
 		else
 		{
-			cout << "Offset for " + var->getName() + " is: " + to_string(var->getOffset()) << endl; 
 			int x = -1 * var->getOffset();
-			cout << "Value of x: " << to_string(x) << endl;
 			code += "\t\tPUSH [BP + " + to_string(x) + "]\t; " + var->getName() + " pushed for expression evaluation" + NEWLINE;
 		}
 		addInCodeSegment(code);
@@ -747,16 +740,16 @@ void createScope()
 	offsets.push_back(offset);
 	offset = 4; // We have to start with offset 4 for parameters as when we call a function then an extra push happens. 
 				// So to nullify that we have to take extra offset by 2.
+	reverse(parameters.begin(), parameters.end());
 	for (auto param : parameters)
 	{
 		SymbolInfo *temp = insertIntoSymbolTable(&param);
 		temp->setOffset(-1* offset); // As in function first parameters are pushed then Bp is pushed. So offset must be positive
 								  // w.r.t BP (We are using negative as while working with offset we have multiplied bby -1
 								  // everywhere for making general rule)
-		cout << "for a function parameter named  " + temp->getName() + " : " << endl;
-		cout << temp->getOffset() << endl;
 		offset += 2;
 	}
+	reverse(parameters.begin(), parameters.end());
 	clearFunctionParam();
 	offset = 2;
 }
