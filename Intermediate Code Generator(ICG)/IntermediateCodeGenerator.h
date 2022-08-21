@@ -350,33 +350,33 @@ void addAssignExpAsmCode(SymbolInfo *left, SymbolInfo *right)
 {
     string code = "";
 	code += "\t\t; At line no " + to_string(line_count) + ": Assigning " + right->getName() + " into " + left->getName() + NEWLINE;
-	code += "\t\tPOP BX" + string("\t; ") + right->getName() + " popped from stack" + NEWLINE;
+	code += "\t\tPOP AX" + string("\t; ") + right->getName() + " popped from stack" + NEWLINE;
 
     if (left->isVariable())
 	{
         if (left->isGlobal)
 		{
-			code += "\t\tMOV " + left->getName() + ", BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE;
+			code += "\t\tMOV " + left->getName() + ", AX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE;
 		}
 		else
 		{
             int x = -1 * left->getOffset();
 			cout << "Value of x: " << to_string(x) << endl;
-			code += "\t\tMOV [BP + " + to_string(x) + "], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE;
+			code += "\t\tMOV [BP + " + to_string(x) + "], AX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE;
 		}
     }
     else if (left->isArray())
 	{
-        code += "\t\tPOP AX" + string("\t; Index of the array popped") + NEWLINE;
+        code += "\t\tPOP BX" + string("\t; Index of the array popped") + NEWLINE;
         code += "\t\tPUSH BP" + string("\t; Saving value of BP in stack, so that we can restore it's value later") + NEWLINE;
-		code += "\t\tMOV BP, AX" + string("\t; Saving address of the array index in BP to access array from stack") + NEWLINE;
+		code += "\t\tMOV BP, BX" + string("\t; Saving address of the array index in BP to access array from stack") + NEWLINE;
 		if (left->isGlobal)
 		{
-			code += "\t\tMOV " + left->getName() + "[BP], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
+			code += "\t\tMOV " + left->getName() + "[BP], AX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
 		}
 		else
 		{
-			code += "\t\tMOV [BP], BX" + string("\t; Value of ") + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
+			code += "\t\tMOV [BP], AX" + string("\t; Value of ") + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
 		}
 		code += "\t\tPOP BP" + string("\t; Restoring value of BP") + NEWLINE;
     }
@@ -561,9 +561,9 @@ void addUnaryOpAsmCode(SymbolInfo *sym, string uniop)
 	{
 		string code = "";
 		code += "\t\t; At line no " + to_string(line_count) + ": Negating " + sym->getName() + NEWLINE;
-		code += "\t\tPOP BX" + string("\t; ") + sym->getName() + " popped from stack" + NEWLINE;
-		code += "\t\tNEG BX" + string("\t; Negating ") + sym->getName() + NEWLINE;
-		code += "\t\tPUSH BX" + string("\t; Saving result of -") + sym->getName() + " in stack" + NEWLINE;
+		code += "\t\tPOP AX" + string("\t; ") + sym->getName() + " popped from stack" + NEWLINE;
+		code += "\t\tNEG AX" + string("\t; Negating ") + sym->getName() + NEWLINE;
+		code += "\t\tPUSH AX" + string("\t; Saving result of -") + sym->getName() + " in stack" + NEWLINE;
 		addInCodeSegment(code);
 	}
 }
@@ -574,8 +574,8 @@ void addNotOpAsmCode(SymbolInfo *sym)
 	string endLabel = newLabel();
 	string code = "";
 	code += "\t\t; At line no " + to_string(line_count) + ": Evaluating !" + sym->getName() + NEWLINE;
-	code += "\t\tPOP BX" + string("\t; Popped ") + sym->getName() + " from stack" + NEWLINE;
-	code += "\t\tCMP BX,0" + string("\t; Comparing ") + sym->getName() + " with 0" + NEWLINE;
+	code += "\t\tPOP AX" + string("\t; Popped ") + sym->getName() + " from stack" + NEWLINE;
+	code += "\t\tCMP AX,0" + string("\t; Comparing ") + sym->getName() + " with 0" + NEWLINE;
 	code += "\t\tJNE " + labelFalse + "\t; Go to label " + labelFalse + " if BX is not 0" + NEWLINE;
 	code += "\t\tPUSH 1" + string("\t; Pushing 0 in stack if BX is 0") + NEWLINE;
 	code += jumpInstant(endLabel);
@@ -717,8 +717,10 @@ void startProcedure(string name)
     string code = "";
     code += "\t" + name + " PROC" + NEWLINE;
     code += "\t\t; Function with name " + name + " started" + NEWLINE;
-    code += "\t\tPUSH BP\n";
-    code += "\t\tMOV BP, SP\t; All the offsets of a function depends on the value of BP" + NEWLINE + NEWLINE;
+    if(name != "main"){
+        code += "\t\tPUSH BP\n";
+        code += "\t\tMOV BP, SP\t; All the offsets of a function depends on the value of BP" + NEWLINE + NEWLINE;
+    }
     addInCodeSegment(code);
     if (name == "main")
     {

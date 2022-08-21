@@ -13,7 +13,8 @@
         "xutility": "cpp",
         "stack": "c",
         "string": "cpp",
-        "iostream": "c"
+        "iostream": "c",
+        "ostream": "c"
     },
     "liveServer.settings.port": 5501
 }

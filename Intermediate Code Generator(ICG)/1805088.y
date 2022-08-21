@@ -528,6 +528,7 @@ statement: var_declaration
                                         ***/
                                         $$ = new SymbolInfo("return ;", TEMPORARY_TYPE);
                                         checkFuncReturnType();
+                                        returnFunction();
                                         setValue(statement,"\t"+string("return ")+";");
                                         printRuleAndCode(statement,"RETURN SEMICOLON");
                                 }

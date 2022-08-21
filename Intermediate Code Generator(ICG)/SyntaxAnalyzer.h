@@ -140,7 +140,7 @@ SymbolInfo *insertVar(SymbolInfo *var, bool isArray = false)
 				if (symbolTable->getCurrentScope()->getId() != 1 && (error_count + syntax_error_count) == 0)
 				{
 					// writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
-					string code = "\t\tPUSH AX\t; In line no " + to_string(line_count) + ": " + temp->getName() + " declared";
+					string code = "\t\tPUSH BX\t; In line no " + to_string(line_count) + ": " + temp->getName() + " declared";
 					cout << offset << endl;
 					cout << "In insertVar setting offset of variable " + temp->getName() + " to: " + to_string(offset) << endl;
 					temp->setOffset(offset);
@@ -207,7 +207,7 @@ void insertArr(SymbolInfo *sym, SymbolInfo *index)
 		string code = "\t\t; In line no " + to_string(line_count) + ": Array named " + arr->getName() + " with size " + to_string(arrsize) + " declared";
 		for (int i = 0; i < arrsize; i++)
 		{
-			code += "\n\t\tPUSH AX";
+			code += "\n\t\tPUSH BX";
 		}
 		code += "\n\t\t;array declared";
 		arr->setOffset(offset);
@@ -745,7 +745,8 @@ void createScope()
 {
 	scope = symbolTable->createScopeTable(NoOfBuckets);
 	offsets.push_back(offset);
-	offset = 2;
+	offset = 4; // We have to start with offset 4 for parameters as when we call a function then an extra push happens. 
+				// So to nullify that we have to take extra offset by 2.
 	for (auto param : parameters)
 	{
 		SymbolInfo *temp = insertIntoSymbolTable(&param);
@@ -757,6 +758,7 @@ void createScope()
 		offset += 2;
 	}
 	clearFunctionParam();
+	offset = 2;
 }
 
 void exitScope()
