@@ -5,7 +5,13 @@
         "memory": "cpp",
         "type_traits": "cpp",
         "xlocnum": "cpp",
-        "limits": "c"
+        "limits": "c",
+        "intermediatecodegenerator.h": "c",
+        "deque": "cpp",
+        "initializer_list": "cpp",
+        "xiosbase": "cpp",
+        "xutility": "cpp",
+        "stack": "c"
     },
     "liveServer.settings.port": 5501
 }

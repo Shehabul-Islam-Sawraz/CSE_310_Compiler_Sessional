@@ -10,15 +10,11 @@ extern int error_count;
 extern FILE *yyin;
 extern char *yytext;
 string variableType;
-size_t syntax_error_count = 0;
-size_t warning_count = 0;
-size_t offset = 2;
 
 size_t noOfParam = 0;
 size_t totalParams = 0;
 vector<string> paramType;
 vector<SymbolInfo> parameters;
-vector<int> offsets;
 
 bool errorRule = false;
 bool isReturnedFromFunction = false;
@@ -72,8 +68,6 @@ SymbolInfo *nullValue()
 	SymbolInfo *temp = new SymbolInfo("$NULL$", "");
 	temp->setDecType(VARIABLE);
 	temp->setVarType(INT_TYPE);
-	temp->intValues.push_back(0);
-	temp->floatValues.push_back(0);
 	return temp;
 }
 
@@ -142,7 +136,7 @@ SymbolInfo *insertVar(SymbolInfo *var, bool isArray = false)
 			// addVarInDataSegment(temp->getName());
 			if (!isArray)
 			{
-				if (symbolTable->getCurrentScope()->getId() != "1" && (error_count + syntax_error_count) == 0)
+				if (symbolTable->getCurrentScope()->getId() != 1 && (error_count + syntax_error_count) == 0)
 				{
 					// writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
 					string code = "\t\tPUSH AX\t; In line no " + to_string(line_count) + ": " + temp->getName() + " declared";
@@ -150,7 +144,7 @@ SymbolInfo *insertVar(SymbolInfo *var, bool isArray = false)
 					offset += 2;
 					addInCodeSegment(code);
 				}
-				else if (symbolTable->getCurrentScope()->getId() == "1")
+				else if (symbolTable->getCurrentScope()->getId() == 1)
 				{
 					if (variableType == FLOAT_TYPE)
 					{
@@ -204,11 +198,11 @@ void insertArr(SymbolInfo *sym, SymbolInfo *index)
 	// 	arr->floatValues.push_back(0);
 	// }
 	int arrsize = arr->getArrSize();
-	if (symbolTable->getCurrentScope()->getId() != "1" && (error_count + syntax_error_count) == 0)
+	if (symbolTable->getCurrentScope()->getId() != 1 && (error_count + syntax_error_count) == 0)
 	{
 		// writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
 		string code = "\t\t; In line no " + to_string(line_count) + ": Array named " + arr->getName() + " with size " + to_string(arrsize) + " declared";
-		for (int i = 0; i < arraySize; i++)
+		for (int i = 0; i < arrsize; i++)
 		{
 			code += "\n\t\tPUSH AX";
 		}
@@ -217,15 +211,15 @@ void insertArr(SymbolInfo *sym, SymbolInfo *index)
 		offset += arrsize * 2;
 		addInCodeSegment(code);
 	}
-	else if (symbolTable->getCurrentScope()->getId() == "1")
+	else if (symbolTable->getCurrentScope()->getId() == 1)
 	{
 		if (variableType == FLOAT_TYPE)
 		{
 			printError("Float type global variable is not supported!!");
 		}
-		if ((error_count + syntax_error_count) == 0)
+		if ((error_count + syntax_error_count) > 0)
 		{
-			return nullValue();
+			return;
 		}
 		arr->isGlobal = true;
 		// arr->setOffset(-1);
@@ -446,7 +440,7 @@ SymbolInfo *getConstValue(SymbolInfo *sym, string varType)
 	sym->setVarType(varType);
 	if(varType == INT_TYPE){
 		string code = "";
-        code += "\t\tPUSH " + $1->getName();
+        code += "\t\tPUSH " + sym->getName();
 		addInCodeSegment(code);
 	}
 	return sym;
@@ -460,14 +454,10 @@ SymbolInfo *getConstValue(string val, string varType)
 	if (varType == FLOAT_TYPE)
 	{
 		sym->setType("CONST_FLOAT");
-		sym->floatValues.push_back(0);
-		sym->fltValue() = static_cast<float>(atof(sym->getName().data()));
 	}
 	else if (varType == INT_TYPE)
 	{
 		sym->setType("CONST_INT");
-		sym->intValues.push_back(0);
-		sym->intValue() = atoi(sym->getName().data());
 	}
 	return sym;
 }
@@ -482,16 +472,7 @@ SymbolInfo *getUnaryOpVal(SymbolInfo *op, SymbolInfo *sym)
 	string uniop = op->getName();
 	SymbolInfo *opVal = new SymbolInfo("", "");
 	opVal = getConstValue(opVal, sym->getVarType());
-
-	if (uniop == "-")
-	{
-		string code = "";
-		code += "\t\t; At line no " + to_string(line_count) + ": Negating " + sym->getName() + NEWLINE;
-		code += "\t\tPOP BX" + "\t; " + sym->getName() + " popped from stack" + NEWLINE;
-		code += "\t\tNEG BX" + "\t; Negating " + sym->getName() + NEWLINE;
-		code += "\t\tPUSH BX" + "\t; Saving result of -" + sym->getName() + " in stack" + NEWLINE;
-		addInCodeSegment(code);
-	}
+	addUnaryOpAsmCode(sym,uniop);
 	return opVal;
 }
 
@@ -504,18 +485,7 @@ SymbolInfo *getNotOpVal(SymbolInfo *sym)
 	}
 	SymbolInfo *opVal = new SymbolInfo("", "");
 	opVal = getConstValue(opVal, INT_TYPE);
-	string labelFalse = newLabel();
-	string endLabel = newLabel();
-	string code = "";
-	code += "\t\t; At line no " + to_string(line_count) + ": Evaluating !" + sym->getName() + NEWLINE;
-	code += "\t\tPOP BX" + "\t; Popped " + sym->getName() + " from stack" + NEWLINE;
-	code += "\t\tCMP BX,0" + "\t; Comparing " + sym->getName() + " with 0" + NEWLINE;
-	code += "\t\tJNE " + labelFalse + "\t; Go to label " + labelFalse + " if BX is not 0" + NEWLINE;
-	// code += "\t\tPUSH 1" + "\t; Pushing 0 in stack if BX is 0" + NEWLINE;
-	code += jumpInstant(endLabel);
-	code += declareLabel(labelFalse, false);
-	code += declareLabel(endLabel, true);
-	addInCodeSegment(code);
+	addNotOpAsmCode(sym);
 	return opVal;
 }
 
@@ -527,7 +497,7 @@ SymbolInfo *getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 		return nullValue();
 	}
 	string addop = op->getName();
-	SymbolInfo *opVal = new SymbolInfo(newTemp(), TEMPORARY_TYPE);
+	SymbolInfo *opVal = new SymbolInfo(left->getName() + op->getName() + right->getName(), TEMPORARY_TYPE);
 	if (left->getVarType() == FLOAT_TYPE || right->getVarType() == FLOAT_TYPE)
 	{
 		opVal = getConstValue(opVal, FLOAT_TYPE);
@@ -540,23 +510,6 @@ SymbolInfo *getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 	// opVal->code += addAddOpAsmCode(addop, opVal->getName(), left, right);
 	addAddOpAsmCode(addop, left, right);
 	return opVal;
-}
-
-string getMulopOperator(string mulop)
-{
-	if (mulop == "%")
-	{
-		return "MODULUS";
-	}
-	else if (mulop == "*")
-	{
-		return "MULTIPLICATION";
-	}
-	else
-	{
-		return "DIVISION";
-	}
-	return "";
 }
 
 SymbolInfo *getMulOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
@@ -596,28 +549,8 @@ SymbolInfo *getMulOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 	{
 		printError("Divide by zero");
 	}
-	string operation = getMulopOperator();
-	string code = "";
-	code += "\t\t; " + operation + " operation between " + left->getName() " and " + right->getName() + NEWLINE;
-	code += "\t\tPOP BX" + "\t; " + right->getName() + " popped from stack" + NEWLINE;
-	code += "\t\tPOP AX" + "\t; " + left->getName() + " popped from stack" + NEWLINE;
-	if (mulop == "*")
-	{
-		// AX = AX * BX
-		code += "\t\tIMUL BX" + "\t; Multiplying " + left->getName() + " and " + right->getName() + NEWLINE;
-	}
-	else
-	{
-		code += "\t\tXOR DX, DX" + "\t; Setting value of DX to 0" + NEWLINE;
-		code += "\t\tIDIV BX" + "\t; Dividing " + left->getName() + " by " + right->getName() + NEWLINE;
-		// AX = AX / BX and DX = AX % BX
-		if (mulop == "%")
-		{
-			code += "\t\tMOV AX, DX" + "\t; Saving remainder after division from DX to AX" + NEWLINE;
-		}
-	}
-	code += "\t\tPUSH AX" + "\t; Saving result of " + left->getName() + mulop + right->getName() + " in stack" + NEWLINE;
-	addInCodeSegment(code);
+
+	addMulOpAsmCode(mulop,left,right);
 	return opVal;
 }
 
@@ -629,9 +562,6 @@ SymbolInfo *getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
 		printError("Assign Operation on void type");
 		return nullValue();
 	}
-	string code = "";
-	code += "\t\t; At line no " + to_string(line_count) + ": Assigning " + right->getName() + " into " + left->getName() + NEWLINE;
-	code += "\t\tPOP BX" + "\t; " + right->getName() + " popped from stack\n";
 	if (left->isVariable())
 	{
 		if (right->getVarType() == INT_TYPE)
@@ -656,18 +586,10 @@ SymbolInfo *getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
 			// 	left->setVarValue(right->fltValue());
 			// }
 		}
-		if (left->isGlobal)
-		{
-			code += "\t\tMOV " + left->getName() + ", BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE;
-		}
-		else
-		{
-			code += "\t\tMOV [BP + " + to_string(-1 * left->getOffset()) + "], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE;
-		}
+		addAssignExpAsmCode(left, right);
 	}
 	else if (left->isArray())
 	{
-		code += "\t\tPOP AX" + "\t; Index of the array popped\n";
 		if (right->getVarType() == INT_TYPE)
 		{
 			if (left->getVarType() == FLOAT_TYPE)
@@ -682,24 +604,13 @@ SymbolInfo *getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
 				printWarning("Assigning float value to integer type array");
 			}
 		}
-		code += "\t\tPUSH BP" + "\t; Saving value of BP in stack, so that we can restore it's value later" + NEWLINE;
-		code += "\t\tMOV BP, AX" + "\t; Saving address of the array index in BP to access array from stack" + NEWLINE;
-
-		if (left->isGlobal)
-		{
-			code += "\t\tMOV " + left->getName() + "[BP], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
-		}
-		else
-		{
-			code += "\t\tMOV [BP], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
-		}
-		code += "\t\tPOP BP" + "\t; Restoring value of BP" + NEWLINE;
+		addAssignExpAsmCode(left, right);
 	}
 	else if (left->isFunction())
 	{
 		printError("Can't assign value to a function");
 	}
-	addInCodeSegment(code);
+	// addInCodeSegment(code);
 	return left;
 }
 
@@ -782,7 +693,7 @@ SymbolInfo *getFuncCallValue(SymbolInfo *sym)
 
 	string code = "";
 	code += callFunction(sym->getName());
-	code += "\t\tPUSH AX" + "\t; Return value of function named " + sym->getName() + " pushed in stack" + NEWLINE;
+	code += "\t\tPUSH AX" + string("\t; Return value of function named ") + sym->getName() + " pushed in stack" + NEWLINE;
 	addInCodeSegment(code);
 
 	clearFunctionParam();
@@ -822,7 +733,7 @@ void createScope()
 	offset = 2;
 	for (auto param : parameters)
 	{
-		SymbolInfo *temp = insertIntoSymbolTable(&param, true);
+		SymbolInfo *temp = insertIntoSymbolTable(&param);
 		temp->setOffset(-offset); // As in function first parameters are pushed then Bp is pushed. So offset must be positive
 								  // w.r.t BP (We are using negative as while working with offset we have multiplied bby -1
 								  // everywhere for making general rule)
@@ -833,10 +744,10 @@ void createScope()
 
 void exitScope()
 {
-	if (currentFunc != nullptr && isReturnedFromFunction == false && currentFunc->getFuncRetType() != VOID_TYPE)
-	{
-		printWarning(currentFunc->getName() + " function with return type " + currentFunc->getFuncRetType() + " has no return statement");
-	}
+	// if (currentFunc != nullptr && isReturnedFromFunction == false && currentFunc->getFuncRetType() != VOID_TYPE)
+	// {
+	// 	printWarning(currentFunc->getName() + " function with return type " + currentFunc->getFuncRetType() + " has no return statement");
+	// }
 	// currentFunc = nullptr;
 	symbolTable->printAllScope(logout);
 	fprintf(logout, "\n\n");

@@ -14,7 +14,9 @@
 
 %token <symbolInfo>ID CONST_INT CONST_FLOAT CONST_CHAR ADDOP MULOP LOGICOP RELOP BITOP
 
-%type <symbolInfo>type_specifier expression logic_expression rel_expression simple_expression term unary_expression factor variable program unit var_declaration func_declaration func_definition parameter_list compound_statement declaration_list statements statement expression_statement argument_list arguments
+%type <symbolInfo>type_specifier expression logic_expression rel_expression simple_expression term unary_expression factor variable
+%type <symbolInfo>program unit var_declaration func_declaration func_definition parameter_list compound_statement declaration_list 
+%type <symbolInfo>statements statement expression_statement argument_list arguments create_if_block
 
 %left COMMA
 %right ASSIGNOP
@@ -642,6 +644,7 @@ int main(int argc,char *argv[])
 
         yyin = inputFile;
         init_model();
+        writeInDataSegment();
 	yyparse();
         symbolTable->printAllScope(logout);
         line_count--;

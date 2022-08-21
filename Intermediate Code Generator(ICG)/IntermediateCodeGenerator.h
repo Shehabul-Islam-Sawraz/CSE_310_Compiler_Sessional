@@ -8,6 +8,13 @@
 string codesegment, datasegment;
 ofstream asmFile;
 
+extern int line_count;
+extern int error_count;
+size_t syntax_error_count = 0;
+size_t warning_count = 0;
+size_t offset = 2;
+vector<int> offsets;
+
 int tempCount = 0, maxTempCount = -1;
 int labelCount = 0;
 string forLoopIncDecCode = "";
@@ -112,9 +119,9 @@ void writeInDataSegment()
 {
     asmFile.close();
     asmFile.open("code.asm");
-    asmFile << popValue(init_asm_model);
-    asmFile << popValue(data_segment);
-    asmFile << popValue(code_segment);
+    asmFile << nonTerminalHandler.getValue(init_asm_model);
+    asmFile << nonTerminalHandler.getValue(data_segment);
+    asmFile << nonTerminalHandler.getValue(code_segment);
 }
 
 void writeInCodeSegment(string str)
@@ -129,19 +136,20 @@ string GET_ASM_VAR_NAME(string var)
     {
         return var;
     }
-    return var + to_string(temp->getScopeID());
+    return var + temp->getScopeID();
 }
 
 void addGlobalVarInDataSegment(string var, int arrsize = 0, bool isArray = false)
 {
     // string code = GET_ASM_VAR_NAME(var) + DEFINE_WORD + "?";
+    string code = "";
     if (!isArray)
     {
-        string code = "\t" + var + DEFINE_WORD + "?";
+        code += "\t" + var + DEFINE_WORD + "?";
     }
     else
     {
-        string code = "\t" + var + DEFINE_WORD + to_string(arrsize) + ARRAY_DUP;
+        code += "\t" + var + DEFINE_WORD + to_string(arrsize) + ARRAY_DUP;
     }
     replaceByNewLine(code);
     // datasegment+=code;
@@ -194,13 +202,13 @@ string getLabelForFunction(string func_name)
 
 void init_model()
 {
-    string code = ".MODEL SMALL\r\n";
-    code += "\r\n.STACk 800H\r\n";
+    string code = ".MODEL SMALL" + NEWLINE;
+    code += NEWLINE + ".STACk 800H" + NEWLINE;
     setValue(init_asm_model, code);
-    setValue(data_segment, "\r\n.DATA \r\n");
-    setValue(code_segment, "\r\n.CODE\r\n");
-    setValue(init_data, "\r\nMOV AX,@DATA\r\n
-                            MOV DS,AX\r\n");
+    setValue(data_segment, NEWLINE + ".DATA" + NEWLINE);
+    setValue(code_segment, NEWLINE + ".CODE" + NEWLINE);
+    setValue(init_data, NEWLINE + "MOV AX, @DATA" + NEWLINE +
+                                  "MOV DS, AX" + NEWLINE);
 }
 
 string newTemp()
@@ -290,6 +298,42 @@ string jumpInstant(string label)
     return "\t\tJMP " + label + NEWLINE;
 }
 
+void addAssignExpAsmCode(SymbolInfo *left, SymbolInfo *right)
+{
+    string code = "";
+	code += "\t\t; At line no " + to_string(line_count) + ": Assigning " + right->getName() + " into " + left->getName() + NEWLINE;
+	code += "\t\tPOP BX" + string("\t; ") + right->getName() + " popped from stack" + NEWLINE;
+
+    if (left->isVariable())
+	{
+        if (left->isGlobal)
+		{
+			code += "\t\tMOV " + left->getName() + ", BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE;
+		}
+		else
+		{
+			code += "\t\tMOV [BP + " + to_string(-1 * left->getOffset()) + "], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE;
+		}
+    }
+    else if (left->isArray())
+	{
+        code += "\t\tPOP AX" + string("\t; Index of the array popped") + NEWLINE;
+        code += "\t\tPUSH BP" + string("\t; Saving value of BP in stack, so that we can restore it's value later") + NEWLINE;
+		code += "\t\tMOV BP, AX" + string("\t; Saving address of the array index in BP to access array from stack") + NEWLINE;
+		if (left->isGlobal)
+		{
+			code += "\t\tMOV " + left->getName() + "[BP], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
+		}
+		else
+		{
+			code += "\t\tMOV [BP], BX" + string("\t; Value of ") + right->getName() + " assigned into " + left->getName() + "[AX]" + NEWLINE;
+		}
+		code += "\t\tPOP BP" + string("\t; Restoring value of BP") + NEWLINE;
+    }
+
+    addInCodeSegment(code);
+}
+
 void addAddOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
 {
     if (op == "+")
@@ -303,10 +347,10 @@ void addAddOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
 
     string code = "";
     code += "\t\t; At line no " + to_string(line_count) + ": " + op + " " + left->getName() + " and " + right->getName() + "\n";
-    code += "\t\tPOP BX\t; " + right->getName() + " popped from stack\n";
-    code += "\t\tPOP AX\t; " + left->getName() + " popped from stack\n";
+    code += "\t\tPOP BX" + string("\t; ") + right->getName() + " popped from stack\n";
+    code += "\t\tPOP AX" + string("\t; ") + left->getName() + " popped from stack\n";
     code += "\t\t" + op + " AX, BX\n";
-    code += "\t\tPUSH AX\t; Pushed evaluated value of " + left->getName() + op + right->getName() + " in the stack\n";
+    code += "\t\tPUSH AX" + string("\t; Pushed evaluated value of ") + left->getName() + op + right->getName() + " in the stack\n";
     addInCodeSegment(code);
 }
 
@@ -347,9 +391,9 @@ void addRelOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
 
     string code = "";
     code += "\t\t; At line no  " + to_string(line_count) + ": Checking if " + left->getName() + op + right->getName() + "\n";
-    code += "\t\tPOP BX" + "\t; Popped out " + right->getName() + " from stack\n";
-    code += "\t\tPOP AX" + "\t; Popped out " + left->getName() + " from stack\n";
-    code += "\t\tCMP AX, BX" + "\t; Comparing " + left->getName() + " with " + right->getName() + "\n";
+    code += "\t\tPOP BX" + string("\t; Popped out ") + right->getName() + " from stack\n";
+    code += "\t\tPOP AX" + string("\t; Popped out ") + left->getName() + " from stack\n";
+    code += "\t\tCMP AX, BX" + string("\t; Comparing ") + left->getName() + " with " + right->getName() + "\n";
     code += conditionalJump(op, labelIfTrue); // If true then do conditional jump
     code += jumpInstant(labelIfFalse);        // If false then do long jump
     code += declareLabel(labelIfTrue, true);
@@ -365,9 +409,9 @@ void addLogicOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
 
     string code = "";
     code += "\t\t; At line no " + to_string(line_count) + ": " + left->getName() + op + right->getName() + NEWLINE;
-    code += "\t\tPOP BX" + "\t; " + right->getName() + " popped from stack\n";
-    code += "\t\tPOP AX" + "\t; " + left->getName() + " popped from stack\n";
-    code += "\t\tCMP AX, 0" + "\t; Comparing " + left->getName() + " and 0\n";
+    code += "\t\tPOP BX" + string("\t; ") + right->getName() + " popped from stack\n";
+    code += "\t\tPOP AX" + string("\t; ") + left->getName() + " popped from stack\n";
+    code += "\t\tCMP AX, 0" + string("\t; Comparing ") + left->getName() + " and 0\n";
     // If operator is &&, then getting a 0 will cause result to be 0
     // and if the operator is ||, then ggetting a 1 will cause result
     // to be 1
@@ -383,7 +427,7 @@ void addLogicOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
     }
     code += jumpInstant(endLabel);
     code += "\t\t" + labelForRightCheck + ":\n";
-    code += "\t\tCMP BX, 0" + "\t; Comparing " + right->getName() + " and 0\n";
+    code += "\t\tCMP BX, 0" + string("\t; Comparing ") + right->getName() + " and 0\n";
     // If operator is &&, then getting 0 in right will cause result to be 0
     // and if the operator is ||, then ggetting a 1 in right will cause result
     // to be 1
@@ -412,57 +456,129 @@ void addLogicOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
     addInCodeSegment(code);
 }
 
+string getMulopOperator(string mulop)
+{
+	if (mulop == "%")
+	{
+		return "MODULUS";
+	}
+	else if (mulop == "*")
+	{
+		return "MULTIPLICATION";
+	}
+	else
+	{
+		return "DIVISION";
+	}
+	return "";
+}
+
+void addMulOpAsmCode(string mulop, SymbolInfo *left, SymbolInfo *right)
+{
+    string operation = getMulopOperator(mulop);
+	string code = "";
+	code += "\t\t; " + operation + " operation between " + left->getName() + " and " + right->getName() + NEWLINE;
+	code += "\t\tPOP BX" + string("\t; ") + right->getName() + " popped from stack" + NEWLINE;
+	code += "\t\tPOP AX" + string("\t; ") + left->getName() + " popped from stack" + NEWLINE;
+	if (mulop == "*")
+	{
+		// AX = AX * BX
+		code += "\t\tIMUL BX" + string("\t; Multiplying ") + left->getName() + " and " + right->getName() + NEWLINE;
+	}
+	else
+	{
+		code += "\t\tXOR DX, DX" + string("\t; Setting value of DX to 0") + NEWLINE;
+		code += "\t\tIDIV BX" + string("\t; Dividing ") + left->getName() + " by " + right->getName() + NEWLINE;
+		// AX = AX / BX and DX = AX % BX
+		if (mulop == "%")
+		{
+			code += "\t\tMOV AX, DX" + string("\t; Saving remainder after division from DX to AX") + NEWLINE;
+		}
+	}
+	code += "\t\tPUSH AX" + string("\t; Saving result of ") + left->getName() + mulop + right->getName() + " in stack" + NEWLINE;
+	addInCodeSegment(code);
+}
+
+void addUnaryOpAsmCode(SymbolInfo *sym, string uniop)
+{
+    if (uniop == "-")
+	{
+		string code = "";
+		code += "\t\t; At line no " + to_string(line_count) + ": Negating " + sym->getName() + NEWLINE;
+		code += "\t\tPOP BX" + string("\t; ") + sym->getName() + " popped from stack" + NEWLINE;
+		code += "\t\tNEG BX" + string("\t; Negating ") + sym->getName() + NEWLINE;
+		code += "\t\tPUSH BX" + string("\t; Saving result of -") + sym->getName() + " in stack" + NEWLINE;
+		addInCodeSegment(code);
+	}
+}
+
+void addNotOpAsmCode(SymbolInfo *sym)
+{
+    string labelFalse = newLabel();
+	string endLabel = newLabel();
+	string code = "";
+	code += "\t\t; At line no " + to_string(line_count) + ": Evaluating !" + sym->getName() + NEWLINE;
+	code += "\t\tPOP BX" + string("\t; Popped ") + sym->getName() + " from stack" + NEWLINE;
+	code += "\t\tCMP BX,0" + string("\t; Comparing ") + sym->getName() + " with 0" + NEWLINE;
+	code += "\t\tJNE " + labelFalse + "\t; Go to label " + labelFalse + " if BX is not 0" + NEWLINE;
+	// code += "\t\tPUSH 1" + "\t; Pushing 0 in stack if BX is 0" + NEWLINE;
+	code += jumpInstant(endLabel);
+	code += declareLabel(labelFalse, false);
+	code += declareLabel(endLabel, true);
+	addInCodeSegment(code);
+}
+
 void addIncDecAsmCode(SymbolInfo *sym, string op, string type)
 {
     string code = "";
     if(type == "post"){
         code += "\t\t; At line no " + to_string(line_count) + ": Evaluating postfix " + op + " of " + sym->getName() + NEWLINE;
         if(sym->getDecType() == ARRAY){
-            code += "\t\tPOP BX" + "\t; Array index popped from stack" + NEWLINE;
-            code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
-            code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
-            code += "\t\tMOV AX, [BP]" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
-            code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
+            code += "\t\tPOP BX" + string("\t; Array index popped from stack") + NEWLINE;
+            code += "\t\tPUSH BP" + string("\t; Saving value of BP in stack") + NEWLINE;
+            code += "\t\tMOV BP, BX" + string("\t; Saving value of array index in BP") + NEWLINE;
+            code += "\t\tMOV AX, [BP]" + string("\t; Saving value of ") + sym->getName() + " in AX" + NEWLINE;
+            code += "\t\tPOP BP" + string("\t; Resetting value of BP") + NEWLINE;
         }
         else{
-            code += "\t\tPOP AX" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
-            code += "\t\tPUSH AX" + "\t; Pushing the value of " + sym->getName() + " back to stack" + NEWLINE;
+            code += "\t\tPOP AX" + string("\t; Saving value of ") + sym->getName() + " in AX" + NEWLINE;
+            code += "\t\tPUSH AX" + string("\t; Pushing the value of ") + sym->getName() + " back to stack" + NEWLINE;
         }
 
         if(op == "++"){
-            code += "\t\tINC AX" + "\t; Incrementing " + sym->getName() + NEWLINE;
+            code += "\t\tINC AX" + string("\t; Incrementing ") + sym->getName() + NEWLINE;
         }
         else{
-            code += "\t\tDEC AX" + "\t; Decrementing " + sym->getName() + NEWLINE;
+            code += "\t\tDEC AX" + string("\t; Decrementing ") + sym->getName() + NEWLINE;
         }
         
         if(sym->isGlobal) {
             if(sym->getDecType() == ARRAY){
-                code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
-                code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
-                code += "\t\tMOV " + sym->getName() + "[BP], AX" + "\t; Saving the result in stack" + NEWLINE;
-                code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
+                code += "\t\tPUSH BP" + string("\t; Saving value of BP in stack") + NEWLINE;
+                code += "\t\tMOV BP, BX" + string("\t; Saving value of array index in BP") + NEWLINE;
+                code += "\t\tMOV " + sym->getName() + "[BP], AX" + string("\t; Saving the result in stack") + NEWLINE;
+                code += "\t\tPOP BP" + string("\t; Resetting value of BP") + NEWLINE;
             }
             else{
-                code += "\t\tMOV " + sym->getName() + ", AX" + "\t; Saving the result in stack" + NEWLINE;
+                code += "\t\tMOV " + sym->getName() + ", AX" + string("\t; Saving the result in stack") + NEWLINE;
             }
         } 
         else {
             if(sym->getDecType() == ARRAY){
-                code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
-                code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
-                code += "\t\tMOV [BP], AX" + "\t; Saving the result in stack" + NEWLINE;
-                code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
+                code += "\t\tPUSH BP" + string("\t; Saving value of BP in stack") + NEWLINE;
+                code += "\t\tMOV BP, BX" + string("\t; Saving value of array index in BP") + NEWLINE;
+                code += "\t\tMOV [BP], AX" + string("\t; Saving the result in stack") + NEWLINE;
+                code += "\t\tPOP BP" + string("\t; Resetting value of BP") + NEWLINE;
             }
             else{
-                code += "\t\tMOV [BP + " + to_string(-1 * sym->getOffset()) + "], AX" + "\t; Saving result in stack" + NEWLINE;
+                code += "\t\tMOV [BP + " + to_string(-1 * sym->getOffset()) + "], AX" + string("\t; Saving result in stack") + NEWLINE;
             }
         }
     }
     else{
         code += "\t\t; At line no " + to_string(line_count) + ": Evaluating prefix " + op + " of " + sym->getName() + NEWLINE;
         if(sym->getDecType() == ARRAY){
-            code += "\t\tPOP BX" + "\t; Array index popped from stack" + NEWLINE;
+            code += "\t\tPOP BX" + string("\t; Array index popped from stack") + NEWLINE;
             // code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
             // code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
             // code += "\t\tMOV AX, [BP]" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
@@ -472,34 +588,34 @@ void addIncDecAsmCode(SymbolInfo *sym, string op, string type)
         //     code += "\t\tPOP AX" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
         //     code += "\t\tPUSH AX" + "\t; Pushing the value of " + sym->getName() + " back to stack" + NEWLINE;
         // }
-        code += "\t\tPOP AX" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
+        code += "\t\tPOP AX" + string("\t; Saving value of ") + sym->getName() + " in AX" + NEWLINE;
 
         if(op == "++"){
-            code += "\t\tINC AX" + "\t; Incrementing " + sym->getName() + NEWLINE;
+            code += "\t\tINC AX" + string("\t; Incrementing ") + sym->getName() + NEWLINE;
         }
         else{
-            code += "\t\tDEC AX" + "\t; Decrementing " + sym->getName() + NEWLINE;
+            code += "\t\tDEC AX" + string("\t; Decrementing ") + sym->getName() + NEWLINE;
         }
         
-        code += "\t\tPUSH AX" + "\t; Pushing the value of " + sym->getName() + " back to stack" + NEWLINE;
+        code += "\t\tPUSH AX" + string("\t; Pushing the value of ") + sym->getName() + " back to stack" + NEWLINE;
 
         if(sym->isGlobal) {
             if(sym->getDecType() == ARRAY){
-                code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
-                code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
-                code += "\t\tMOV " + sym->getName() + "[BP], AX" + "\t; Saving the result in stack" + NEWLINE;
-                code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
+                code += "\t\tPUSH BP" + string("\t; Saving value of BP in stack") + NEWLINE;
+                code += "\t\tMOV BP, BX" + string("\t; Saving value of array index in BP") + NEWLINE;
+                code += "\t\tMOV " + sym->getName() + "[BP], AX" + string("\t; Saving the result in stack") + NEWLINE;
+                code += "\t\tPOP BP" + string("\t; Resetting value of BP") + NEWLINE;
             }
             else{
-                code += "\t\tMOV " + sym->getName() + ", AX" + "\t; Saving the result in stack" + NEWLINE;
+                code += "\t\tMOV " + sym->getName() + ", AX" + string("\t; Saving the result in stack") + NEWLINE;
             }
         } 
         else {
             if(sym->getDecType() == ARRAY){
-                code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
-                code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
-                code += "\t\tMOV [BP], AX" + "\t; Saving the result in stack" + NEWLINE;
-                code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
+                code += "\t\tPUSH BP" + string("\t; Saving value of BP in stack") + NEWLINE;
+                code += "\t\tMOV BP, BX" + string("\t; Saving value of array index in BP") + NEWLINE;
+                code += "\t\tMOV [BP], AX" + string("\t; Saving the result in stack") + NEWLINE;
+                code += "\t\tPOP BP" + string("\t; Resetting value of BP") + NEWLINE;
             }
             else{
                 code += "\t\tMOV [BP + " + to_string(-1 * sym->getOffset()) + "], AX" + "\t; Saving result in stack" + NEWLINE;
@@ -526,7 +642,7 @@ void initMainProc()
         return;
     }
     string code = "";
-    code += "\t\t; DATA SEGMENT INITIALIZATION\n";
+    code += "\t\t; DATA SEGMENT INITIALIZATION" + NEWLINE;
     code += "\t\tMOV AX, @DATA\n\t\tMOV DS, AX";
     offset = 2;
     addInCodeSegment(code);
@@ -539,8 +655,8 @@ void startProcedure(string name)
         return;
     }
     string code = "";
-    code += "\t" + name + " PROC\n";
-    code += "\t\t; Function with name " + name + " started";
+    code += "\t" + name + " PROC" + NEWLINE;
+    code += "\t\t; Function with name " + name + " started" + NEWLINE;
     code += "\t\tPUSH BP\n";
     code += "\t\tMOV BP, SP\t; All the offsets of a function depends on the value of BP\n";
     addInCodeSegment(code);
@@ -569,15 +685,15 @@ void endProcedure(string name, string retType)
     }
     if (currentFunc->getFuncRetType() == VOID_TYPE)
     {
-        code += "\t\tRET 0\n"
+        code += "\t\tRET 0" + NEWLINE;
     }
     else
     {
         vector<string> v = currentFunc->getparamType();
-        code += "\t\tRET " + to_string(2 * v.size()) + "\n";
+        code += "\t\tRET " + to_string(2 * v.size()) + NEWLINE;
     }
 
-    code += "\t" + name + " ENDP\n";
+    code += "\t" + name + " ENDP" + NEWLINE;
     addInCodeSegment(code);
 }
 
@@ -587,7 +703,7 @@ void popArrayFromStack(string reg, SymbolInfo *sym)
     // and goes to "factor : variable" rule then we no longer need the index of the previously accessed array
     if (sym->getDecType() == ARRAY)
     {
-        addInCodeSegment("\t\tPOP BX" + "\t; Array index popped because it is no longer required");
+        addInCodeSegment("\t\tPOP BX" + string("\t; Array index popped because it is no longer required"));
     }
 }
 
@@ -595,27 +711,27 @@ void evaluateArrayVariable(SymbolInfo *var, string index)
 {
     string code = "";
     code += "\t\t; At line no " + to_string(line_count) + ": getting value of " + var->getName() + "[" + index + "]\n";
-    code += "\t\tPOP BX" + "\t; Getting index of the array\n";
-    code += "\t\tSHL BX, 1" + "\t; Multiplying index by 2 to match size of a word\n";
+    code += "\t\tPOP BX" + string("\t; Getting index of the array") + NEWLINE;
+    code += "\t\tSHL BX, 1" + string("\t; Multiplying index by 2 to match size of a word") + NEWLINE;
     if (var->isGlobal)
     {
-        code += "\t\tPUSH BP" + "\t; Saving value of BP in stack, so that we can restore it's value later" + NEWLINE;
-        code += "\t\tMOV BP, BX" + "\t; Saving address of the array index in BP to access array from stack" + NEWLINE;
-        code += "\t\tMOV AX, " + var->getName() + "[BP]" + "\t; Getting the value of the array from index BP\n";
+        code += "\t\tPUSH BP" + string("\t; Saving value of BP in stack, so that we can restore it's value later") + NEWLINE;
+        code += "\t\tMOV BP, BX" + string("\t; Saving address of the array index in BP to access array from stack") + NEWLINE;
+        code += "\t\tMOV AX, " + var->getName() + "[BP]" + string("\t; Getting the value of the array from index BP") + NEWLINE;
     }
     else
     {
         code += "\t\tSUB BX, " + to_string(var->getOffset()) + "\t; Adding the offset of the array to get the offset of array element\n";
-        code += "\t\tADD BX, BP" + "\t; Adding BP to BX to get the address of the array\n";
-        code += "\t\tPUSH BP" + "\t; Saving value of BP in stack, so that we can restore it's value later" + NEWLINE;
-        code += "\t\tMOV BP, BX" + "\t; Saving address of the array index in BP to access array from stack" + NEWLINE;
-        code += "\t\tMOV AX, [BP]" + "\t; Getting the value of the array at address BP\n";
+        code += "\t\tADD BX, BP" + string("\t; Adding BP to BX to get the address of the array") + NEWLINE;
+        code += "\t\tPUSH BP" + string("\t; Saving value of BP in stack, so that we can restore it's value later") + NEWLINE;
+        code += "\t\tMOV BP, BX" + string("\t; Saving address of the array index in BP to access array from stack") + NEWLINE;
+        code += "\t\tMOV AX, [BP]" + string("\t; Getting the value of the array at address BP") + NEWLINE;
     }
-    code += "\t\tPOP BP" + "\t; Restoring value of BP" + NEWLINE;
+    code += "\t\tPOP BP" + string("\t; Restoring value of BP") + NEWLINE;
     // Pushing the index and value of the array element on the stack
     // This will allow the ASSIGNOP and INCOP to use it later
-    code += "\t\tPUSH AX" + "\t; Pushing the value of the array element at index " + index->getName() + NEWLINE;
-    code += "\t\tPUSH BX" + "\t; Pushing the index of the array\n";
+    code += "\t\tPUSH AX" + string("\t; Pushing the value of the array element at index ") + index + NEWLINE;
+    code += "\t\tPUSH BX" + string("\t; Pushing the index of the array") + NEWLINE;
     addInCodeSegment(code);
 }
 
@@ -624,7 +740,7 @@ void handleExtraExpressionPush(string name)
     // There is always an extra push after every expression
     // So, we need to pop it out after we get a semicolon after an expression
     string code = "";
-    code += "\t\tPOP AX" + "\t; Popped out " + name + NEWLINE;
+    code += "\t\tPOP AX" + string("\t; Popped out ") + name + NEWLINE;
     addInCodeSegment(code);
 }
 
@@ -645,7 +761,7 @@ void forLoopConditionCheck(){
     string code = "";
     // We have already popped AX from stack after getting expression_statement. This AX contains
     // the result of the condition inside for loop
-    code += "\t\tCMP AX, 0" + "\t; Checking if the condition is true or false" + NEWLINE;
+    code += "\t\tCMP AX, 0" + string("\t; Checking if the condition is true or false") + NEWLINE;
     // If AX != 0, then statement will compile, otherwise go to end label
     code += conditionalJump("JNE", labelIfTrue);
     code += "\t\t; If false then jump to the end label of for loop" + NEWLINE;
@@ -658,7 +774,7 @@ void forLoopConditionCheck(){
 void gotoNextStepInForLoop(string var)
 {
     string code = "";
-    code += "\t\tPOP AX" + "\t; Popped " + var + " from stack" + NEWLINE;
+    code += "\t\tPOP AX" + string("\t; Popped ") + var + " from stack" + NEWLINE;
     code += "\t\tJMP " + forLoopStartLabel + "\t; Jump back to for loop" + NEWLINE;
     code += "\t\t; End label of for loop" + NEWLINE;
     code += "\t\t" + forLoopEndLabel + ":" + NEWLINE;
@@ -679,8 +795,8 @@ SymbolInfo* createIfBlock()
     SymbolInfo *sym = new SymbolInfo(labelIfFalse, TEMPORARY_TYPE);
     string code = "";
     code += "\t\t; At line no " + to_string(line_count) + ": Evaluationg if statement" + NEWLINE;
-    code += "\t\tPOP AX" + "\t; Popped expression value from stack" + NEWLINE;
-    code += "\t\tCMP AX, 0" + "\t; Checking whether expression is true or false" + NEWLINE;
+    code += "\t\tPOP AX" + string("\t; Popped expression value from stack") + NEWLINE;
+    code += "\t\tCMP AX, 0" + string("\t; Checking whether expression is true or false") + NEWLINE;
     code += conditionalJump("JNE", labelIfTrue);
     code += "\t\t; If expression is false then jump to the end of if block" + NEWLINE;
     code += jumpInstant(labelIfFalse);
@@ -731,8 +847,8 @@ void whileLoopConditionCheck(string var){
     string endLabel = newLabel();
     whileLoopEndLabel = endLabel;
     string code = "";
-    code += "\t\tPOP AX" + "\t; Popped " + var + " from stack" + NEWLINE;
-    code += "\t\tCMP AX, 0" + "\t; Checking if the condition is true or false" + NEWLINE;
+    code += "\t\tPOP AX" + string("\t; Popped ") + var + " from stack" + NEWLINE;
+    code += "\t\tCMP AX, 0" + string("\t; Checking if the condition is true or false") + NEWLINE;
     // If AX != 0, then statement will compile, otherwise go to end label
     code += conditionalJump("JNE", labelIfTrue);
     code += "\t\t; If false then jump to the end label of while loop" + NEWLINE;
@@ -767,15 +883,15 @@ void printId(SymbolInfo *sym)
 void returnFunction()
 {
     string code = "";
-    code += "\t\tPOP AX" + "\t; Popped return value and saved it in AX" + NEWLINE;
+    code += "\t\tPOP AX" + string("\t; Popped return value and saved it in AX") + NEWLINE;
     addInCodeSegment(code);
 }
 
-void writeProcPrintln() {
+void writePrintNumProc() {
     string code = "";
     code = "\t;println(n)\n";
     code += 
-    "\tPRINT_INTEGER PROC NEAR\n\
+    "\tPRINT_NUM PROC NEAR\n\
         PUSH BP             ;Saving BP\n\
         MOV BP, SP          ;BP points to the top of the stack\n\
         MOV BX, [BP + 4]    ;The number to be printed\n\
@@ -822,7 +938,7 @@ void writeProcPrintln() {
         INT 21H\n\
         POP BP          ; Restore BP\n\
         RET 2\n\
-    PRINT_INTEGER ENDP";
+    PRINT_NUM ENDP";
     
     addInCodeSegment(code);
 }

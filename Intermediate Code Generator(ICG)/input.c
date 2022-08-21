@@ -1,22 +1,55 @@
-int x,y,z; float a;
-
-void foo();
-
-int var(int a, int b){
-	return a+b;
+int f(int a)
+{
+    int k;
+    k = 5;
+    while (k > 0)
+    {
+        a++;
+        k--;
+    }
+    return 3 * a - 7;
+    a = 9;
 }
 
-void foo(){
-	x=2;
-	y=x-5;
+int g(int a, int b)
+{
+
+    int x, i;
+    x = f(a) + a + b;
+
+    for (i = 0; i < 7; i++)
+    {
+        if (i % 3 == 0)
+        {
+            x = x + 5;
+        }
+        else
+        {
+            x = x - 1;
+        }
+    }
+
+    return x;
 }
 
-int main(){
-	int a[2],c,i,j ; float d;
-	a[0];
-	a[1]=5;
-	i= a[0]+a[1];
-	j= 2*3+(5%3 < 4 && 8) || 2 ;
-	d=var(1,2*3)+3.5*2;
-	return 0;
+int main()
+{
+    int a, b, i;
+    a = 1;
+    b = 2;
+    a = g(a, b);
+    printf(a);
+    for (i = 0; i < 4; i++)
+    {
+        a = 3;
+        while (a > 0)
+        {
+            b++;
+            a--;
+        }
+    }
+    printf(a);
+    printf(b);
+    printf(i);
+    return 0;
 }

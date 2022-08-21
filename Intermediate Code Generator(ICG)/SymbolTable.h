@@ -313,7 +313,7 @@ public:
         }
     }
 
-    int getId(int id){
+    int getId(){
         return this->id;
     }
 
