@@ -33,7 +33,7 @@ private:
     int scopeId = -1;
     string funcRetLabel = "";
     string arrIndex = "";
-    size_t offset;
+    int offset;
 
 public:
     //vector<int> intValues; // Stores array values if array is INT_TYPE. Default value is set to 0
@@ -206,7 +206,7 @@ public:
         this->offset = offset;
     }
 
-    size_t getOffset(){
+    int getOffset(){
         return this->offset;
     }
 
@@ -306,7 +306,7 @@ public:
 
     void setId(){
         if(this->parentScope==nullptr){
-            this->id = 0;
+            this->id = 1;
         }
         else{
             this->id = this->parentScope->getId()+1;

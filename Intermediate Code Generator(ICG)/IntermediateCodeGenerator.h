@@ -7,12 +7,13 @@
 
 string codesegment, datasegment;
 ofstream asmFile;
+FILE *logout, *errorout, *parserout;
 
 extern int line_count;
 extern int error_count;
 size_t syntax_error_count = 0;
 size_t warning_count = 0;
-size_t offset = 2;
+int offset = 2;
 vector<int> offsets;
 
 int tempCount = 0, maxTempCount = -1;
@@ -28,16 +29,22 @@ SymbolTable *symbolTable = new SymbolTable(); // Have to declare it in ICG heade
 
 SymbolInfo *currentFunc = nullptr;
 
-string ruleName[] = {"init_asm_model", "data_segment", "code_segment",
-                     "init_data", "error"};
+
+string ruleName[] = {"init_asm_model", "data_segment", "code_segment", "init_data",
+                        "start", "program", "unit", "func_declaration", "func_definition", "parameter_list",
+                        "compound_statement", "var_declaration", "type_specifier", "declaration_list", "statements",
+                        "statement", "expression_statement", "variable", "expression", "logic_expression",
+                        "rel_expression", "simple_expression", "term", "unary_expression", "factor", "argument_list",
+                        "arguments"};
 
 enum NONTERMINAL_TYPE
 {
-    init_asm_model = 0,
-    data_segment,
-    code_segment,
-    init_data,
-    error
+    init_asm_model = 0, data_segment, code_segment, init_data,
+    start, program, unit, func_declaration, func_definition,
+	parameter_list, compound_statement, var_declaration, type_specifier,
+	declaration_list, statements, statement, expression_statement,
+	variable, expression, logic_expression, rel_expression, simple_expression,
+	term, unary_expression, factor, argument_list, arguments, error
 };
 
 class NonTerminalHandler
@@ -97,6 +104,39 @@ bool replaceAll(string &source, string toReplace, string replaceBy)
     return true;
 }
 
+string formatCode(string code){
+	string formattedCode = code;
+	while (replaceAll(formattedCode, " ;", ";"));
+	while (replaceAll(formattedCode, " ,", ","));
+	replaceAll(formattedCode, ";", ";\n");
+	replaceAll(formattedCode, ";\n\n", ";\n");
+	while (replaceAll(formattedCode, "( ", "("));
+	while (replaceAll(formattedCode, " (", "("));
+	while (replaceAll(formattedCode, ") ", ")"));
+	while (replaceAll(formattedCode, " )", ")"));
+	while (replaceAll(formattedCode, "\n{", "{"));
+	while (replaceAll(formattedCode, "{ ", "{"));
+	while (replaceAll(formattedCode, " {", "{"));
+	while (replaceAll(formattedCode, "} ", "}"));
+	while (replaceAll(formattedCode, " }", "}"));
+	replaceAll(formattedCode, "{", "\n{\n");
+	replaceAll(formattedCode, "}", "\n}\n");
+	while (replaceAll(formattedCode, "\n\n}", "\n}"));
+	//while (replaceAll(formattedCode, "}\n\n", "}\n"));
+	while (replaceAll(formattedCode, "  = ", " = "));
+	while (replaceAll(formattedCode, " =  ", " = "));
+	while (replaceAll(formattedCode, "  == ", " == "));
+	while (replaceAll(formattedCode, " ==  ", " == "));
+	//replaceAll(formattedCode, "(", " ( ");
+	//replaceAll(formattedCode, ")", " ) ");
+	while (replaceAll(formattedCode, " ++", "++"));
+	while (replaceAll(formattedCode, " --", "--"));
+	while (replaceAll(formattedCode, "\n ", "\n"));
+	while (replaceAll(formattedCode, " \n", "\n"));
+	while (replaceAll(formattedCode, "  ", " "));
+	return formattedCode;
+}
+
 void replaceByNewLine(string &str)
 {
     replaceAll(str, "\r", "");
@@ -113,6 +153,14 @@ uint32_t hashValue(string str)
     for (int c : str)
         hash = c + (hash * 64) + (hash * 65536) - hash;
     return hash;
+}
+
+void printRuleAndCode(NONTERMINAL_TYPE nonterminal, string rule){
+	fprintf(logout,"Line %d: %s : %s\n",line_count, ruleName[nonterminal].data(), rule.data());
+	// if(!errorRule){
+	// 	fprintf(parserout,"Line %d: %s : %s\n",line_count, ruleName[nonterminal].data(), rule.data());
+	// }
+	fprintf(logout,"%s\n", formatCode(nonTerminalHandler.getValue(nonterminal)).data());
 }
 
 void writeInDataSegment()
@@ -190,7 +238,7 @@ void addInCodeSegment(string code)
             writeInCodeSegment(str);
         }
         else{
-            forLoopIncDecCode = code;
+            forLoopIncDecCode += code;
         }
     }
 }
@@ -312,7 +360,9 @@ void addAssignExpAsmCode(SymbolInfo *left, SymbolInfo *right)
 		}
 		else
 		{
-			code += "\t\tMOV [BP + " + to_string(-1 * left->getOffset()) + "], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE;
+            int x = -1 * left->getOffset();
+			cout << "Value of x: " << to_string(x) << endl;
+			code += "\t\tMOV [BP + " + to_string(x) + "], BX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE;
 		}
     }
     else if (left->isArray())
@@ -395,9 +445,10 @@ void addRelOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
     code += "\t\tPOP AX" + string("\t; Popped out ") + left->getName() + " from stack\n";
     code += "\t\tCMP AX, BX" + string("\t; Comparing ") + left->getName() + " with " + right->getName() + "\n";
     code += conditionalJump(op, labelIfTrue); // If true then do conditional jump
+    code += "\t\tPUSH 0" + string("\t; Saving expression value to be false") + NEWLINE;
     code += jumpInstant(labelIfFalse);        // If false then do long jump
     code += declareLabel(labelIfTrue, true);
-    code += declareLabel(labelIfFalse, false);
+    code += "\t\t" + labelIfFalse + ":" + NEWLINE + NEWLINE;
     addInCodeSegment(code);
 }
 
@@ -419,11 +470,13 @@ void addLogicOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
     {
         code += "\t\t; If " + left->getName() + " is not 0, then check " + right->getName() + ". So, jump to " + labelForRightCheck + "\n";
         code += conditionalJump("JNE", labelForRightCheck);
+        code += "\t\tPUSH 0" + string("\t; Saving expression value to be false") + NEWLINE;
     }
     else
     {
         code += "\t\t; if " + left->getName() + " is 0, check " + right->getName() + ". So, jump to " + labelForRightCheck + "\n";
         code += conditionalJump("JE", labelForRightCheck);
+        code += "\t\tPUSH 1" + string("\t; Saving expression value to be true") + NEWLINE;
     }
     code += jumpInstant(endLabel);
     code += "\t\t" + labelForRightCheck + ":\n";
@@ -435,22 +488,24 @@ void addLogicOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
     {
         code += "\t\t; If " + right->getName() + " is not 0, the whole expression is true. So, jump to " + resultLabel + NEWLINE;
         code += conditionalJump("JNE", resultLabel);
+        code += "\t\tPUSH 0" + string("\t; Saving expression value to be false") + NEWLINE;
     }
     else
     {
         code += "\t\t; If " + right->getName() + " is 0, the whole expression is false. So, jump to " + resultLabel + NEWLINE;
         code += conditionalJump("JE", resultLabel);
+        code += "\t\tPUSH 1" + string("\t; Saving expression value to be true") + NEWLINE;
     }
     code += jumpInstant(endLabel);
     if (op == "&&")
     {
         code += declareLabel(resultLabel, true);
-        code += declareLabel(endLabel, false);
+        code += "\t\t" + endLabel + ":" + NEWLINE + NEWLINE;
     }
     else
     {
         code += declareLabel(resultLabel, false);
-        code += declareLabel(endLabel, true);
+        code += "\t\t" + endLabel + ":" + NEWLINE + NEWLINE;
     }
 
     addInCodeSegment(code);
@@ -475,6 +530,7 @@ string getMulopOperator(string mulop)
 
 void addMulOpAsmCode(string mulop, SymbolInfo *left, SymbolInfo *right)
 {
+    cout << " MULOP e ashche" << endl;
     string operation = getMulopOperator(mulop);
 	string code = "";
 	code += "\t\t; " + operation + " operation between " + left->getName() + " and " + right->getName() + NEWLINE;
@@ -521,10 +577,10 @@ void addNotOpAsmCode(SymbolInfo *sym)
 	code += "\t\tPOP BX" + string("\t; Popped ") + sym->getName() + " from stack" + NEWLINE;
 	code += "\t\tCMP BX,0" + string("\t; Comparing ") + sym->getName() + " with 0" + NEWLINE;
 	code += "\t\tJNE " + labelFalse + "\t; Go to label " + labelFalse + " if BX is not 0" + NEWLINE;
-	// code += "\t\tPUSH 1" + "\t; Pushing 0 in stack if BX is 0" + NEWLINE;
+	code += "\t\tPUSH 1" + string("\t; Pushing 0 in stack if BX is 0") + NEWLINE;
 	code += jumpInstant(endLabel);
 	code += declareLabel(labelFalse, false);
-	code += declareLabel(endLabel, true);
+	code += "\t\t" + endLabel + ":" + NEWLINE + NEWLINE;
 	addInCodeSegment(code);
 }
 
@@ -571,7 +627,9 @@ void addIncDecAsmCode(SymbolInfo *sym, string op, string type)
                 code += "\t\tPOP BP" + string("\t; Resetting value of BP") + NEWLINE;
             }
             else{
-                code += "\t\tMOV [BP + " + to_string(-1 * sym->getOffset()) + "], AX" + string("\t; Saving result in stack") + NEWLINE;
+                int x = -1 * sym->getOffset();
+			    cout << "Value of x: " << to_string(x) << endl;
+                code += "\t\tMOV [BP + " + to_string(x) + "], AX" + string("\t; Saving result in stack") + NEWLINE;
             }
         }
     }
@@ -618,7 +676,9 @@ void addIncDecAsmCode(SymbolInfo *sym, string op, string type)
                 code += "\t\tPOP BP" + string("\t; Resetting value of BP") + NEWLINE;
             }
             else{
-                code += "\t\tMOV [BP + " + to_string(-1 * sym->getOffset()) + "], AX" + "\t; Saving result in stack" + NEWLINE;
+                int x = -1 * sym->getOffset();
+			    cout << "Value of x: " << to_string(x) << endl;
+                code += "\t\tMOV [BP + " + to_string(x) + "], AX" + "\t; Saving result in stack" + NEWLINE;
             }
         }
     }
@@ -658,7 +718,7 @@ void startProcedure(string name)
     code += "\t" + name + " PROC" + NEWLINE;
     code += "\t\t; Function with name " + name + " started" + NEWLINE;
     code += "\t\tPUSH BP\n";
-    code += "\t\tMOV BP, SP\t; All the offsets of a function depends on the value of BP\n";
+    code += "\t\tMOV BP, SP\t; All the offsets of a function depends on the value of BP" + NEWLINE + NEWLINE;
     addInCodeSegment(code);
     if (name == "main")
     {
@@ -692,7 +752,12 @@ void endProcedure(string name, string retType)
         vector<string> v = currentFunc->getparamType();
         code += "\t\tRET " + to_string(2 * v.size()) + NEWLINE;
     }
+    addInCodeSegment(code);
+}
 
+void writeENDPForFunc(string name)
+{
+    string code = "";
     code += "\t" + name + " ENDP" + NEWLINE;
     addInCodeSegment(code);
 }
@@ -778,14 +843,16 @@ void gotoNextStepInForLoop(string var)
     code += "\t\tJMP " + forLoopStartLabel + "\t; Jump back to for loop" + NEWLINE;
     code += "\t\t; End label of for loop" + NEWLINE;
     code += "\t\t" + forLoopEndLabel + ":" + NEWLINE;
-    forLoopExpressionCode = code;
+    forLoopExpressionCode += code;
+    isForLoop = false;
 }
 
 void endForLoop()
 {
     addInCodeSegment(forLoopIncDecCode);
     addInCodeSegment(forLoopExpressionCode);
-    isForLoop = false;
+    forLoopIncDecCode = "";
+    forLoopExpressionCode = "";
 }
 
 SymbolInfo* createIfBlock()
@@ -874,7 +941,9 @@ void printId(SymbolInfo *sym)
         code += "PUSH " + sym->getName() + "\t; Passing " + sym->getName() + " to PRINT_NUM for printing it" + NEWLINE;
     }
     else{
-        code += "\t\tPUSH [BP+" + to_string(-1 * sym->getOffset()) + "]" + "\t; Passing " + sym->getName() + " to PRINT_NUM for printing it" + NEWLINE;
+        int x = -1 * sym->getOffset();
+		cout << "Value of x: " << to_string(x) << endl;
+        code += "\t\tPUSH [BP + " + to_string(x) + "]" + "\t; Passing " + sym->getName() + " to PRINT_NUM for printing it" + NEWLINE;
     }
     code += "\t\tCALL PRINT_NUM" + NEWLINE;
     addInCodeSegment(code);
@@ -885,11 +954,12 @@ void returnFunction()
     string code = "";
     code += "\t\tPOP AX" + string("\t; Popped return value and saved it in AX") + NEWLINE;
     addInCodeSegment(code);
+    endProcedure(currentFunc->getName(), currentFunc->getFuncRetType());
 }
 
 void writePrintNumProc() {
     string code = "";
-    code = "\t;println(n)\n";
+    code = "\t;printf(n)\n";
     code += 
     "\tPRINT_NUM PROC NEAR\n\
         PUSH BP             ;Saving BP\n\

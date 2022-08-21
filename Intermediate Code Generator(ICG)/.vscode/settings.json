@@ -11,7 +11,9 @@
         "initializer_list": "cpp",
         "xiosbase": "cpp",
         "xutility": "cpp",
-        "stack": "c"
+        "stack": "c",
+        "string": "cpp",
+        "iostream": "c"
     },
     "liveServer.settings.port": 5501
 }

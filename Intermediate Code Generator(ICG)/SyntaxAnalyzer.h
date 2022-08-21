@@ -4,7 +4,6 @@
 #define INFINITY_INT numeric_limits<int>::max();
 #define INFINITY_FLOAT numeric_limits<float>::infinity()
 
-FILE *logout, *errorout, *parserout;
 extern int line_count;
 extern int error_count;
 extern FILE *yyin;
@@ -136,10 +135,14 @@ SymbolInfo *insertVar(SymbolInfo *var, bool isArray = false)
 			// addVarInDataSegment(temp->getName());
 			if (!isArray)
 			{
+				cout << "Eikhane ashche" << endl;
+				cout << symbolTable->getCurrentScope()->getId() << endl;
 				if (symbolTable->getCurrentScope()->getId() != 1 && (error_count + syntax_error_count) == 0)
 				{
 					// writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
 					string code = "\t\tPUSH AX\t; In line no " + to_string(line_count) + ": " + temp->getName() + " declared";
+					cout << offset << endl;
+					cout << "In insertVar setting offset of variable " + temp->getName() + " to: " + to_string(offset) << endl;
 					temp->setOffset(offset);
 					offset += 2;
 					addInCodeSegment(code);
@@ -341,6 +344,7 @@ SymbolInfo *getVariable(SymbolInfo *sym)
 		var->setVarType(temp->getVarType());
 		var->setType(TEMPORARY_TYPE);
 		var->setOffset(temp->getOffset());
+		cout << "Offset for temp is: " + to_string(temp->getOffset()) << endl;
 		var->isGlobal = temp->isGlobal;
 		string code = "";
 		if (var->isGlobal)
@@ -349,7 +353,10 @@ SymbolInfo *getVariable(SymbolInfo *sym)
 		}
 		else
 		{
-			code += "\t\tPUSH [BP + " + to_string(-1 * var->getOffset()) + "];" + var->getName() + " pushed for expression evaluation";
+			cout << "Offset for " + var->getName() + " is: " + to_string(var->getOffset()) << endl; 
+			int x = -1 * var->getOffset();
+			cout << "Value of x: " << to_string(x) << endl;
+			code += "\t\tPUSH [BP + " + to_string(x) + "]\t; " + var->getName() + " pushed for expression evaluation" + NEWLINE;
 		}
 		addInCodeSegment(code);
 		return var;
@@ -364,6 +371,11 @@ void checkExistance(SymbolInfo *sym)
 	{
 		printError("Undeclared variable " + sym->getName());
 	}
+}
+
+void printIdValue(SymbolInfo *sym){
+	SymbolInfo *temp = symbolTable->lookUp(sym->getName(), (int)(hashValue(sym->getName()) % NoOfBuckets));
+	printId(temp);
 }
 
 SymbolInfo *getArrVar(SymbolInfo *sym, SymbolInfo *index)
@@ -427,7 +439,10 @@ SymbolInfo *endFuncDef(bool endProc = false, string name = "", string retType = 
 	offsets.pop_back();
 	if (endProc)
 	{
-		endProcedure(name, retType);
+		if(retType == VOID_TYPE){
+			endProcedure(name, retType);
+		}
+		//endProcedure(name, retType);
 	}
 	totalParams = 0;
 	currentFunc = nullptr;
@@ -440,7 +455,7 @@ SymbolInfo *getConstValue(SymbolInfo *sym, string varType)
 	sym->setVarType(varType);
 	if(varType == INT_TYPE){
 		string code = "";
-        code += "\t\tPUSH " + sym->getName();
+        code += "\t\tPUSH " + sym->getName() + "\t; Pushing constant value in stack";
 		addInCodeSegment(code);
 	}
 	return sym;
@@ -471,7 +486,7 @@ SymbolInfo *getUnaryOpVal(SymbolInfo *op, SymbolInfo *sym)
 	}
 	string uniop = op->getName();
 	SymbolInfo *opVal = new SymbolInfo("", "");
-	opVal = getConstValue(opVal, sym->getVarType());
+	opVal = getConstValue("", sym->getVarType());
 	addUnaryOpAsmCode(sym,uniop);
 	return opVal;
 }
@@ -484,7 +499,7 @@ SymbolInfo *getNotOpVal(SymbolInfo *sym)
 		return nullValue();
 	}
 	SymbolInfo *opVal = new SymbolInfo("", "");
-	opVal = getConstValue(opVal, INT_TYPE);
+	opVal = getConstValue("", INT_TYPE);
 	addNotOpAsmCode(sym);
 	return opVal;
 }
@@ -500,11 +515,11 @@ SymbolInfo *getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 	SymbolInfo *opVal = new SymbolInfo(left->getName() + op->getName() + right->getName(), TEMPORARY_TYPE);
 	if (left->getVarType() == FLOAT_TYPE || right->getVarType() == FLOAT_TYPE)
 	{
-		opVal = getConstValue(opVal, FLOAT_TYPE);
+		opVal = getConstValue("", FLOAT_TYPE);
 	}
 	else
 	{
-		opVal = getConstValue(opVal, INT_TYPE);
+		opVal = getConstValue("", INT_TYPE);
 	}
 	// opVal->code = left->code + addop + right->code;
 	// opVal->code += addAddOpAsmCode(addop, opVal->getName(), left, right);
@@ -532,11 +547,11 @@ SymbolInfo *getMulOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 	SymbolInfo *opVal = new SymbolInfo("", "");
 	if (left->getVarType() == FLOAT_TYPE || right->getVarType() == FLOAT_TYPE)
 	{
-		opVal = getConstValue(opVal, FLOAT_TYPE);
+		opVal = getConstValue("", FLOAT_TYPE);
 	}
 	else
 	{
-		opVal = getConstValue(opVal, INT_TYPE);
+		opVal = getConstValue("", INT_TYPE);
 	}
 	if (mulop == "%")
 	{
@@ -703,7 +718,7 @@ SymbolInfo *getFuncCallValue(SymbolInfo *sym)
 SymbolInfo *getINDECOpVal(SymbolInfo *sym, string op, string type)
 {
 	SymbolInfo *opVal = new SymbolInfo("", "");
-	opVal = getConstValue(opVal, sym->getVarType());
+	opVal = getConstValue("", sym->getVarType());
 	addIncDecAsmCode(sym, op, type);
 	return opVal;
 }
@@ -734,9 +749,11 @@ void createScope()
 	for (auto param : parameters)
 	{
 		SymbolInfo *temp = insertIntoSymbolTable(&param);
-		temp->setOffset(-offset); // As in function first parameters are pushed then Bp is pushed. So offset must be positive
+		temp->setOffset(-1* offset); // As in function first parameters are pushed then Bp is pushed. So offset must be positive
 								  // w.r.t BP (We are using negative as while working with offset we have multiplied bby -1
 								  // everywhere for making general rule)
+		cout << "for a function parameter named  " + temp->getName() + " : " << endl;
+		cout << temp->getOffset() << endl;
 		offset += 2;
 	}
 	clearFunctionParam();
