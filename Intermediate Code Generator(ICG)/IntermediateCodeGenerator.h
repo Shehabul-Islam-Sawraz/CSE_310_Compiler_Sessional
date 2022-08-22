@@ -744,11 +744,6 @@ void endProcedure(string name, string retType)
     code += "\t\tMOV SP, BP\t; Restoring SP at the end of function\n";
     code += "\t\tPOP BP\t; Restoring BP at the end of function\n";
 
-    if (name == "main")
-    {
-        code += "\t\t; Setting interrupt for function end\n";
-        code += "\t\tMOV AH, 4CH\n\t\tINT 21H\n";
-    }
     if (currentFunc->getFuncRetType() == VOID_TYPE)
     {
         code += "\t\tRET 0" + NEWLINE;
@@ -764,6 +759,11 @@ void endProcedure(string name, string retType)
 void writeENDPForFunc(string name)
 {
     string code = "";
+    if (name == "main")
+    {
+        code += "\t\t; Setting interrupt for function end\n";
+        code += "\t\tMOV AH, 4CH\n\t\tINT 21H\n";
+    }
     code += "\t" + name + " ENDP" + NEWLINE;
     addInCodeSegment(code);
 }
