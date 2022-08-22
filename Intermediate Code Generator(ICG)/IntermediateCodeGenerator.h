@@ -739,7 +739,8 @@ void endProcedure(string name, string retType)
     }
 
     string code = "";
-    code += "\t\t" + getLabelForFunction(name) + ":\n";
+    //code += "\t\t" + getLabelForFunction(name) + ":\n";
+    code += NEWLINE + NEWLINE;
     code += "\t\tMOV SP, BP\t; Restoring SP at the end of function\n";
     code += "\t\tPOP BP\t; Restoring BP at the end of function\n";
 
