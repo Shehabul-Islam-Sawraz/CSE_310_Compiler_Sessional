@@ -24,7 +24,7 @@ bool isForLoop = false;
 stack<string> forLoopEndLabel, forLoopStartLabel;
 stack<string> elseBlockEndLabel;
 stack<string> forLoop;
-string whileLoopStartLabel = "", whileLoopEndLabel = "";
+stack<string> whileLoopStartLabel, whileLoopEndLabel;
 
 ScopeTable *scope = nullptr;                  // Have to declare it in ICG header file
 SymbolTable *symbolTable = new SymbolTable(); // Have to declare it in ICG header file
@@ -927,7 +927,7 @@ void endIfElseBlock()
 void whileLoopStart()
 {
     string startLabel = newLabel();
-    whileLoopStartLabel = startLabel;
+    whileLoopStartLabel.push(startLabel);
     string code = "";
     code += "\t\t; At line no " + to_string(line_count) + ": Starting while loop" + NEWLINE;
     code += "\t\t" + startLabel + ":\t; While loop start label" + NEWLINE;
@@ -937,7 +937,7 @@ void whileLoopStart()
 void whileLoopConditionCheck(string var){
     string labelIfTrue = newLabel();
     string endLabel = newLabel();
-    whileLoopEndLabel = endLabel;
+    whileLoopEndLabel.push(endLabel);
     string code = "";
     code += "\t\tPOP AX" + string("\t; Popped ") + var + " from stack" + NEWLINE;
     code += "\t\tCMP AX, 0" + string("\t; Checking if the condition is true or false") + NEWLINE;
@@ -952,12 +952,16 @@ void whileLoopConditionCheck(string var){
 void endWhileLoop()
 {
     string code = "";
-    code += "\t\tJMP " + whileLoopStartLabel + "\t; Jump back to while loop" + NEWLINE;
-    code += "\t\t; End label of while loop" + NEWLINE;
-    code += "\t\t" + whileLoopEndLabel + ":" + NEWLINE;
+    if(!whileLoopStartLabel.empty()){
+        code += "\t\tJMP " + whileLoopStartLabel.top() + "\t; Jump back to while loop" + NEWLINE;
+        whileLoopStartLabel.pop();
+    }
+    if(!whileLoopEndLabel.empty()){
+        code += "\t\t; End label of while loop" + NEWLINE;
+        code += "\t\t" + whileLoopEndLabel.top() + ":" + NEWLINE;
+        whileLoopEndLabel.pop();
+    }
     addInCodeSegment(code);
-    whileLoopStartLabel = "";
-    whileLoopEndLabel = "";
 }
 
 void printId(SymbolInfo *sym)
