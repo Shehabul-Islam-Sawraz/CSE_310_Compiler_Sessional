@@ -6,7 +6,7 @@
 #define NEWLINE string("\r\n")
 
 string codesegment, datasegment;
-ofstream asmFile;
+ofstream asmFile, optimizedFile;
 FILE *logout, *errorout, *parserout;
 
 extern int line_count;
@@ -31,6 +31,7 @@ SymbolTable *symbolTable = new SymbolTable(); // Have to declare it in ICG heade
 
 SymbolInfo *currentFunc = nullptr;
 
+const string WHITESPACE = " \n\r\t\f\v";
 
 string ruleName[] = {"init_asm_model", "data_segment", "code_segment", "init_data",
                         "start", "program", "unit", "func_declaration", "func_definition", "parameter_list",
@@ -139,6 +140,133 @@ string formatCode(string code){
 	return formattedCode;
 }
 
+/*bool isNumber(string str)
+{
+    for (char c : str) {
+        if (isdigit(c) == 0){
+            return false;
+        }
+    }
+    return true;
+}
+
+int strToInt(string str)
+{
+    stringstream ss; 
+    int num;
+    ss << str;
+    ss >> num;
+    return num;
+}
+
+string& ltrim(string &s)
+{
+    auto it = find_if(s.begin(), s.end(),
+                    [](char c) {
+                        return !std::isspace<char>(c, std::locale::classic());
+                    });
+    s.erase(s.begin(), it);
+    return s;
+}
+
+vector<string> split(string s){
+    vector<string> tokens;
+    string token = "";
+    string str = "";
+    for(int i=0;i<s.length();i++){
+        if(s[i]!='\t'){
+            str += s[i];
+        }
+    }
+    for (int i = 0; i < str.length(); i++) {
+        if (str[i] == ' ' || str[i] == ',' || str[i] == '\t') {
+            if (token != "") {
+                tokens.push_back(token);
+                token = "";
+            }
+        }
+        else {
+            token += str[i];
+        }
+    }
+
+    if (token != "") {
+        tokens.push_back(token);
+    }
+
+    return tokens;
+}
+
+void optimizeCodeSegment()
+{
+    string line, nextLine;
+	vector<string> portions, nextPortions;
+    asmFile.open("code.asm");
+    vector<string> lineVector;
+    while (getline(asmFile,line)){
+        lineVector.push_back(line);
+    }
+		
+    for (int i = 0; i < lineVector.size()-1; i++)
+    {
+        if((split(lineVector[i]).size()==0)){
+            continue;
+        }
+        
+        line=lineVector[i];
+        nextLine=lineVector[i+1];
+        portions=split(line);
+        nextPortions=split(nextLine);
+        if(portions[0]=="PUSH"){
+            if(nextPortions[0]=="POP"){ 
+                if(portions[1]==nextPortions[1]){ // PUSH AX ; POP AX
+                    lineVector[i]=";----Optimized Code----" + NEWLINE + ";" + lineVector[i];
+                    lineVector[i+1]=";"+lineVector[i+1];
+                }
+            }
+        }
+        if(portions[0]=="MOV"){
+            if(portions[1]==portions[2]){ // MOV AX, AX
+                lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
+            }
+            if(nextPortions[0]=="MOV"){ 
+                if((portions[1]==nextPortions[2]) && (portions[2]==nextPortions[1])){ // MOV AX, BX ; MOV BX, AX
+                    lineVector[i+1]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i+1];
+                }
+                if(portions[1]==nextPortions[1]){ // MOV AX, BX ; MOV AX, CX
+                    lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
+                }
+            }
+        }
+        if(portions[0] == "ADD" || portions[0] == "SUB"){
+            if(isNumber(portions[2])){
+                if(strToInt(portions[2]) == 0){
+                    lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
+                }
+            }
+        }
+        if(portions[0] == "IMUL" || portions[0] == "IDIV"){
+            if(isNumber(portions[2])){
+                if(strToInt(portions[2]) == 1){
+                    lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
+                }
+            }
+        }
+        if((portions[0] == "ADD" && nextPortions[0] == "ADD") || (portions[0] == "SUB" && nextPortions[0] == "SUB")){
+            if(isNumber(portions[2]) && isNumber(nextPortions[2])){
+                if(portions[1]==nextPortions[1]){
+                    lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
+                    int x = strToInt(portions[2]) + strToInt(nextPortions[2]);
+                    lineVector[i+1]=portions[0] + " " + portions[1] + ", " + to_string(x);
+                }
+            }
+        }
+    }
+    for (int i = 0; i < lineVector.size(); i++){
+        optimizeCodeSegment <<lineVector[i] << endl;
+    }
+}*/
+
 void replaceByNewLine(string &str)
 {
     replaceAll(str, "\r", "");
@@ -159,9 +287,6 @@ uint32_t hashValue(string str)
 
 void printRuleAndCode(NONTERMINAL_TYPE nonterminal, string rule){
 	fprintf(logout,"Line %d: %s : %s\n",line_count, ruleName[nonterminal].data(), rule.data());
-	// if(!errorRule){
-	// 	fprintf(parserout,"Line %d: %s : %s\n",line_count, ruleName[nonterminal].data(), rule.data());
-	// }
 	fprintf(logout,"%s\n", formatCode(nonTerminalHandler.getValue(nonterminal)).data());
 }
 
@@ -192,7 +317,6 @@ string GET_ASM_VAR_NAME(string var)
 void addGlobalVarInDataSegment(string var, int arrsize = 0, bool isArray = false)
 {
     // string code = GET_ASM_VAR_NAME(var) + DEFINE_WORD + "?";
-    cout << "eikhane ashche ree bhaoi-------" << endl;
     string code = "";
     if (!isArray)
     {
@@ -203,28 +327,9 @@ void addGlobalVarInDataSegment(string var, int arrsize = 0, bool isArray = false
         code += "\t" + var + DEFINE_WORD + to_string(arrsize) + ARRAY_DUP;
     }
     replaceByNewLine(code);
-    // datasegment+=code;
     setValue(data_segment, popValue(data_segment) + code);
     writeInDataSegment();
 }
-
-// void addVarInDataSegment(string var){
-//     //string code = GET_ASM_VAR_NAME(var) + DEFINE_WORD + "?";
-//     string code = "\t" + var + DEFINE_WORD + "?";
-//     replaceByNewLine(code);
-//     //datasegment+=code;
-//     setValue(data_segment, popValue(data_segment)+code);
-//     writeInDataSegment();
-// }
-
-// void addArrInDataSegment(string var, int arrsize){
-//     //SymbolInfo* temp = symbolTable->lookUp(var,(int)(hashValue(var)%NoOfBuckets));
-//     string code = "\t" + var + DEFINE_WORD + to_string(arrsize) + ARRAY_DUP;
-//     replaceByNewLine(code);
-//     //datasegment+=code;
-//     setValue(data_segment, popValue(data_segment)+code);
-//     writeInDataSegment();
-// }
 
 void addInCodeSegment(string code)
 {
@@ -364,7 +469,6 @@ void addAssignExpAsmCode(SymbolInfo *left, SymbolInfo *right)
 		else
 		{
             int x = -1 * left->getOffset();
-			cout << "Value of x: " << to_string(x) << endl;
 			code += "\t\tMOV [BP + " + to_string(x) + "], AX" + "\t; Value of " + right->getName() + " assigned into " + left->getName() + NEWLINE;
 		}
     }
@@ -533,7 +637,6 @@ string getMulopOperator(string mulop)
 
 void addMulOpAsmCode(string mulop, SymbolInfo *left, SymbolInfo *right)
 {
-    cout << " MULOP e ashche" << endl;
     string operation = getMulopOperator(mulop);
 	string code = "";
 	code += "\t\t; " + operation + " operation between " + left->getName() + " and " + right->getName() + NEWLINE;
@@ -631,7 +734,6 @@ void addIncDecAsmCode(SymbolInfo *sym, string op, string type)
             }
             else{
                 int x = -1 * sym->getOffset();
-			    cout << "Value of x: " << to_string(x) << endl;
                 code += "\t\tMOV [BP + " + to_string(x) + "], AX" + string("\t; Saving result in stack") + NEWLINE;
             }
         }
@@ -640,15 +742,7 @@ void addIncDecAsmCode(SymbolInfo *sym, string op, string type)
         code += "\t\t; At line no " + to_string(line_count) + ": Evaluating prefix " + op + " of " + sym->getName() + NEWLINE;
         if(sym->getDecType() == ARRAY){
             code += "\t\tPOP BX" + string("\t; Array index popped from stack") + NEWLINE;
-            // code += "\t\tPUSH BP" + "\t; Saving value of BP in stack" + NEWLINE;
-            // code += "\t\tMOV BP, BX" + "\t; Saving value of array index in BP" + NEWLINE;
-            // code += "\t\tMOV AX, [BP]" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
-            // code += "\t\tPOP BP" + "\t; Resetting value of BP" + NEWLINE;
         }
-        // else{
-        //     code += "\t\tPOP AX" + "\t; Saving value of " + sym->getName() + " in AX" + NEWLINE;
-        //     code += "\t\tPUSH AX" + "\t; Pushing the value of " + sym->getName() + " back to stack" + NEWLINE;
-        // }
         code += "\t\tPOP AX" + string("\t; Saving value of ") + sym->getName() + " in AX" + NEWLINE;
 
         if(op == "++"){
@@ -680,7 +774,6 @@ void addIncDecAsmCode(SymbolInfo *sym, string op, string type)
             }
             else{
                 int x = -1 * sym->getOffset();
-			    cout << "Value of x: " << to_string(x) << endl;
                 code += "\t\tMOV [BP + " + to_string(x) + "], AX" + "\t; Saving result in stack" + NEWLINE;
             }
         }
@@ -748,7 +841,7 @@ void endProcedure(string name, string retType)
     {
         code += "\t\tRET 0" + NEWLINE;
     }
-    else
+    else if(name != "main")
     {
         vector<string> v = currentFunc->getparamType();
         code += "\t\tRET " + to_string(2 * v.size()) + NEWLINE;
@@ -857,8 +950,6 @@ void gotoNextStepInForLoop(string var)
         forLoopEndLabel.pop();
     }
     forLoopExpressionCode = forLoopIncDecCode + code;
-    // string str = forLoop.top();
-    //str = forLoopExpressionCode + str;
     forLoop.push(forLoopExpressionCode);
     forLoopIncDecCode = "";
     forLoopExpressionCode = "";
@@ -866,10 +957,7 @@ void gotoNextStepInForLoop(string var)
 }
 
 void endForLoop()
-{
-    //addInCodeSegment(forLoopIncDecCode);
-    //addInCodeSegment(forLoopExpressionCode);
-    
+{   
     if(!forLoop.empty()){
         addInCodeSegment(forLoop.top());
         forLoop.pop();
@@ -974,7 +1062,6 @@ void printId(SymbolInfo *sym)
     }
     else{
         int x = -1 * sym->getOffset();
-		cout << "Value of x: " << to_string(x) << endl;
         code += "\t\tPUSH [BP + " + to_string(x) + "]" + "\t; Passing " + sym->getName() + " to PRINT_NUM for printing it" + NEWLINE;
     }
     code += "\t\tCALL PRINT_NUM" + NEWLINE;

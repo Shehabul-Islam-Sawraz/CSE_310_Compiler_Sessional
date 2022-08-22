@@ -105,7 +105,6 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN {insertFunc($2,
                                         **/
                                         $$ = new SymbolInfo($1->getName() + " " + $2->getName() + "(" + $4->getName() + ");", "func_declaration");
                                         clearFunctionParam();
-                                        //printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN SEMICOLON");
                                         printError("Invalid parameter list");
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+";");
                                 }
@@ -117,7 +116,6 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN {insertFunc($2,
                                         **/
                                         $$ = new SymbolInfo($1->getName() + " " + $2->getName() + "(" + $4->getName() + ")", "func_declaration");
                                         clearFunctionParam();
-                                        //printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN parameter_list RPAREN");
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+"\n");
                                         printError("; missing. Error in function parameter list");
                                 }
@@ -127,7 +125,6 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN {insertFunc($2,
                                                 To handle errors like: 
                                                 void foo()
                                         **/
-                                        //printErrorRecovery("; missing",func_declaration,"type_specifier ID LPAREN RPAREN");
                                         $$ = new SymbolInfo($1->getName() + " " + $2->getName() + "()", "func_declaration");
                                         printError("; missing");
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"\n");
@@ -139,7 +136,6 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN {insertFunc($2,
                                                 void foo(-);
                                         **/
                                         $$ = new SymbolInfo($1->getName() + " " + $2->getName() + "();", "func_declaration");
-                                        //printErrorRecovery("Invalid parameter list",func_declaration,"type_specifier ID LPAREN RPAREN SEMICOLON");
                                         printError("Invalid parameter list");
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+";");
                                 }
@@ -150,7 +146,6 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN {insertFunc($2,
                                                 void foo(-)
                                         **/
                                         $$ = new SymbolInfo($1->getName() + " " + $2->getName() + "()", "func_declaration");
-                                        //printErrorRecovery("; missing. Error in function parameter list",func_declaration,"type_specifier ID LPAREN RPAREN");
                                         printError("; missing. Error in function parameter list");
                                         setValue(func_declaration,popValue(type_specifier)+" "+$2->getName()+"("+")"+"\n");
                                 }
@@ -158,15 +153,8 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN {insertFunc($2,
 
 func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef($1, $2); startProcedure($2->getName());} compound_statement
                                 {
-                                        //$$ = new SymbolInfo($1->getName() + " " + $2->getName() + "(" + $4->getName() + ")" + $7->getName(), "func_definition");
                                         $$ = endFuncDef(true, $2->getName(), $1->getName());
                                         writeENDPForFunc($2->getName());
-                                        // $$ = new SymbolInfo("",TEMPORARY_TYPE);
-                                        // offset = offsets.back();
-                                        // offsets.pop_back();
-                                        // endProcedure($2->getName(), $2->getFuncRetType());
-                                        // totalParams = 0;
-                                        // currentFunc = nullptr;
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
                                         printRuleAndCode(func_definition,"type_specifier ID LPAREN parameter_list RPAREN compound_statement");
                                 }
@@ -238,7 +226,6 @@ parameter_list: parameter_list COMMA type_specifier ID
                                         **/
                                         $$ = new SymbolInfo($1->getName() + "," + $4->getName() + " " + $5->getName(), "parameter_list");
                                         insertIntoParamType($5);
-                                        //printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list COMMA type_specifier ID");
                                         printError("Invalid parameter list");
                                         setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier)+" "+$5->getName());
                                 }
@@ -250,21 +237,18 @@ parameter_list: parameter_list COMMA type_specifier ID
                                         **/
                                         $$ = new SymbolInfo($1->getName() + "," + $4->getName(), "parameter_list");
                                         paramType.push_back(variableType);
-                                        //printErrorRecovery("Invalid parameter list",parameter_list,"parameter_list COMMA type_specifier");
                                         printError("Invalid parameter list");
                                         setValue(parameter_list,popValue(parameter_list)+", "+popValue(type_specifier));
                                 }
                 |       parameter_list COMMA error ID
                                 {
                                         $$ = new SymbolInfo($1->getName() + "," + $4->getName(), "parameter_list");
-                                        //printErrorRecovery("Type specifier missing in parameters",parameter_list,"parameter_list COMMA ID");
                                         printError("Type specifier missing in parameters");
                                         setValue(parameter_list,popValue(parameter_list)+", "+$4->getName());
                                 }
                 |       error ID
                                 {
                                         $$ = $2;
-                                        //printErrorRecovery("Type specifier missing in parameters",parameter_list,"ID");
                                         printError("Type specifier missing in parameters");
                                         setValue(parameter_list,$2->getName());
                                 }
@@ -319,7 +303,6 @@ var_declaration: type_specifier declaration_list SEMICOLON
                                                 int x[10]-y;
                                                 int x[10.5]-y;
                                         **/ 
-                                        //printErrorRecovery("Invalid variable declaration",var_declaration,"type_specifier declaration_list SEMICOLON");
                                         $$ = new SymbolInfo($1->getName() + " " + $2->getName() + ";", "VARIABLE");
                                         printError("Invalid variable declaration");
                                         setValue(var_declaration, popValue(type_specifier)+" "+popValue(declaration_list)+";");
@@ -377,7 +360,6 @@ declaration_list : declaration_list COMMA ID
                 |       ID LTHIRD error RTHIRD
                                 {
                                         $$ = new SymbolInfo($1->getName() + "[]", "VARIABLE");
-                                        //printErrorRecovery("Constant integer type array size must be provided",declaration_list,"ID LTHIRD RTHIRD");
                                         printError("Constant integer type array size must be provided");
                                         insertVar($1);
                                         setValue(declaration_list,$1->getName()+"["+"]");
@@ -385,7 +367,6 @@ declaration_list : declaration_list COMMA ID
                 |       declaration_list COMMA ID LTHIRD error RTHIRD
                                 {
                                         $$ = new SymbolInfo($1->getName() + "," + $3->getName() + "[]", "VARIABLE");
-                                        //printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD RTHIRD");
                                         printError("Constant integer type array size must be provided");
                                         insertVar($3);
                                         setValue(declaration_list,popValue(declaration_list)+","+$3->getName()+"["+"]");
@@ -396,7 +377,6 @@ declaration_list : declaration_list COMMA ID
                                                 To handle errors like :
                                                 int x-y,z;
                                         **/ 
-                                        //printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list COMMA ID");
                                         $$ = new SymbolInfo($1->getName() + "," + $4->getName(), "VARIABLE");
                                         printError("Invalid declaration of variable/array");
                                         insertVar($4);
@@ -408,7 +388,6 @@ declaration_list : declaration_list COMMA ID
                                                 To handle errors like :
                                                 int x-y,z[10];
                                         **/ 
-                                        //printErrorRecovery("Invalid declaration of variable/array",declaration_list,"declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
                                         $$ = new SymbolInfo($1->getName() + "," + $4->getName() + "[" + $6->getName() + "]", "VARIABLE");
                                         printError("Invalid declaration of variable/array");
                                         insertArr($4,$6);
@@ -420,7 +399,6 @@ declaration_list : declaration_list COMMA ID
                                                 To handle errors like :
                                                 int x-y,z[10.5];
                                         **/
-                                        //printErrorRecovery("Constant integer type array size must be provided",declaration_list,"declaration_list COMMA ID LTHIRD RTHIRD");
                                         $$ = new SymbolInfo($1->getName() + "," + $4->getName() + "[]", "VARIABLE");
                                         printError("Constant integer type array size must be provided");
                                         insertVar($4);
@@ -467,13 +445,11 @@ statement: var_declaration
                                 }
                 |       func_definition
                                 {
-                                        // printErrorRecovery("Invalid scoping of function", statement, "func_definition");
                                         printError("Invalid scoping of function");
                                         setValue(statement,popValue(func_definition));
                                 }
                 |       func_declaration
                                 {
-                                        // printErrorRecovery("Invalid scoping of function", statement, "func_declaration");
                                         printError("Invalid scoping of function");
                                         setValue(statement,popValue(func_declaration));
                                 }
@@ -535,28 +511,24 @@ statement: var_declaration
                 |       IF LPAREN error RPAREN statement %prec LOWER_THAN_ELSE
                                 {
                                         $$ = new SymbolInfo("if()" + $5->getName(), TEMPORARY_TYPE);
-                                        //printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN RPAREN statement");
                                         printError("Invalid expression inside conditional if statement");
                                         setValue(statement,(string("if")+"("+")\n"+popValue(statement)));
                                 }
                 |       IF LPAREN error RPAREN statement ELSE statement
                                 {
                                         $$ = new SymbolInfo("if()" + $5->getName() + "else\n" + $7->getName(), TEMPORARY_TYPE);
-                                        //printErrorRecovery("Invalid expression inside conditional if statement",statement,"IF LPAREN RPAREN statement ELSE statement");
                                         printError("Invalid expression inside conditional if statement");
                                         setValue(statement,(string("if")+"("+")\n"+popValue(statement)+"\nelse\n"+popValue(statement)));
                                 }
                 |       error ELSE statement
                                 {
                                         $$ = new SymbolInfo("else\n" + $3->getName(), TEMPORARY_TYPE);
-                                        //printErrorRecovery("Else conditional statement without an if",statement,"ELSE statement");
                                         printError("Else conditional statement without an if");
                                         setValue(statement,"else"+popValue(statement));
                                 }
                 |       RETURN expression error		
                                 {
                                         $$ = new SymbolInfo("return " + $2->getName(), TEMPORARY_TYPE);
-                                        //printErrorRecovery("; missing",statement,"RETURN expression");
                                         setValue(statement,"return "+popValue(expression)+"");
                                         printError("; missing");
                                 }
@@ -754,14 +726,12 @@ factor: variable
                                 }
                 |       ID LPAREN argument_list error
                                 {
-                                        //printErrorRecovery("Right parentheses missing",factor,"ID LPAREN argument_list");
                                         printError("Right parentheses missing");
                                         setValue(factor,$1->getName()+"("+popValue(argument_list));
                                         clearFunctionParam();
                                 }
                 |       LPAREN expression error
                                 {
-                                        //printErrorRecovery("Right parentheses missing",factor,"LPAREN expression");
                                         setValue(factor,"("+popValue(expression)+"");
                                         printError("Right parentheses missing");
                                 }
@@ -815,6 +785,7 @@ int main(int argc,char *argv[])
 	errorout= fopen("error.txt","w");
 	parserout= fopen("parser.txt","w");
         asmFile.open("code.asm");
+        // optimizedFile.open("optimizedCode.asm");
 
         yyin = inputFile;
         init_model();
@@ -830,11 +801,14 @@ int main(int argc,char *argv[])
         if((error_count+syntax_error_count)>0){
                 asmFile.close();
                 asmFile.open("code.asm");
+                // optimizedFile.close();
+                // optimizedFile.open("code.asm");
         }
         else{
                 writePrintNumProc();
                 endAssemblyCode();
         }
+        // optimizeCodeSegment();
 
         fclose(yyin);
 	fclose(logout);

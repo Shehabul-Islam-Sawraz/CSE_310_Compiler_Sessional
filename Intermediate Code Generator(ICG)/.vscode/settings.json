@@ -15,7 +15,8 @@
         "string": "cpp",
         "iostream": "c",
         "ostream": "c",
-        "vector": "c"
+        "vector": "c",
+        "iosfwd": "c"
     },
     "liveServer.settings.port": 5501
 }

@@ -22,39 +22,6 @@ string lookAheadBuf;
 int yyparse();
 int yylex();
 
-// string formatCode(string code){
-// 	string formattedCode = code;
-// 	while (replaceAll(formattedCode, " ;", ";"));
-// 	while (replaceAll(formattedCode, " ,", ","));
-// 	replaceAll(formattedCode, ";", ";\n");
-// 	replaceAll(formattedCode, ";\n\n", ";\n");
-// 	while (replaceAll(formattedCode, "( ", "("));
-// 	while (replaceAll(formattedCode, " (", "("));
-// 	while (replaceAll(formattedCode, ") ", ")"));
-// 	while (replaceAll(formattedCode, " )", ")"));
-// 	while (replaceAll(formattedCode, "\n{", "{"));
-// 	while (replaceAll(formattedCode, "{ ", "{"));
-// 	while (replaceAll(formattedCode, " {", "{"));
-// 	while (replaceAll(formattedCode, "} ", "}"));
-// 	while (replaceAll(formattedCode, " }", "}"));
-// 	replaceAll(formattedCode, "{", "\n{\n");
-// 	replaceAll(formattedCode, "}", "\n}\n");
-// 	while (replaceAll(formattedCode, "\n\n}", "\n}"));
-// 	//while (replaceAll(formattedCode, "}\n\n", "}\n"));
-// 	while (replaceAll(formattedCode, "  = ", " = "));
-// 	while (replaceAll(formattedCode, " =  ", " = "));
-// 	while (replaceAll(formattedCode, "  == ", " == "));
-// 	while (replaceAll(formattedCode, " ==  ", " == "));
-// 	//replaceAll(formattedCode, "(", " ( ");
-// 	//replaceAll(formattedCode, ")", " ) ");
-// 	while (replaceAll(formattedCode, " ++", "++"));
-// 	while (replaceAll(formattedCode, " --", "--"));
-// 	while (replaceAll(formattedCode, "\n ", "\n"));
-// 	while (replaceAll(formattedCode, " \n", "\n"));
-// 	while (replaceAll(formattedCode, "  ", " "));
-// 	return formattedCode;
-// }
-
 void clearFunctionParam()
 {
 	paramType.clear();
@@ -79,7 +46,6 @@ SymbolInfo *insertIntoSymbolTable(SymbolInfo *symbol)
 	scope->insertSymbol(symbol->getName(), symbol->getType(), (int)(hashValue(symbol->getName()) % NoOfBuckets), symbol->getVarType(), symbol->getDecType());
 	SymbolInfo *temp = symbolTable->lookUp(symbol->getName(), (int)(hashValue(symbol->getName()) % NoOfBuckets));
 	temp->setScopeID(scope->getId());
-	cout << "Id for " + temp->getName() + " is " + (temp->getScopeID()) << endl;
 	return temp;
 }
 
@@ -133,13 +99,10 @@ SymbolInfo *insertVar(SymbolInfo *var, bool isArray = false)
 			SymbolInfo *temp = insertIntoSymbolTable(var);
 			temp->setDecType(VARIABLE);
 			temp->setVarType(variableType);
-			// addVarInDataSegment(temp->getName());
 			if (!isArray)
 			{
 				if (temp->getScopeID() != "1" && (error_count + syntax_error_count) == 0)
 				{
-					cout << "Ahhare get id hoilo: " + temp->getScopeID() << endl;
-					// writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
 					string code = "\t\tPUSH BX\t; In line no " + to_string(line_count) + ": " + temp->getName() + " declared";
 					temp->setOffset(offset);
 					offset += 2;
@@ -147,7 +110,6 @@ SymbolInfo *insertVar(SymbolInfo *var, bool isArray = false)
 				}
 				else if (temp->getScopeID() == "1" && (error_count + syntax_error_count) == 0)
 				{
-					cout << "Ahhare get id hoilo-------: " + temp->getScopeID() << endl;
 					if (variableType == FLOAT_TYPE)
 					{
 						printError("Float type global variable is not supported!!");
@@ -194,11 +156,6 @@ void insertArr(SymbolInfo *sym, SymbolInfo *index)
 	SymbolInfo *arr = insertVar(sym, true);
 	arr->setDecType(ARRAY);
 	arr->setArrSize(static_cast<size_t>(atoi(index->getName().data()))); // Set the size of the array as defined size
-	// int l = arr->getArrSize();
-	// for(int i=0;i<l;i++){
-	// 	arr->intValues.push_back(0);
-	// 	arr->floatValues.push_back(0);
-	// }
 	int arrsize = arr->getArrSize();
 	if (arr->getScopeID() != "1" && (error_count + syntax_error_count) == 0)
 	{
@@ -278,12 +235,10 @@ void addFunctionDef(SymbolInfo *retType, SymbolInfo *func)
 		{
 			return;
 		}
-		// totalParams = 0;
 		temp->setIsFuncDeclared(true);
 		currentFunc = temp;
 		return;
 	}
-	// totalParams = 0;
 	insertFunc(func, retType);
 	func = symbolTable->lookUp(func->getName(), (int)(hashValue(func->getName()) % NoOfBuckets));
 	func->setIsFuncDeclared(true);
@@ -407,23 +362,6 @@ SymbolInfo *getArrVar(SymbolInfo *sym, SymbolInfo *index)
 	var->setType(TEMPORARY_TYPE);
 	var->setOffset(temp->getOffset());
 	var->isGlobal = temp->isGlobal;
-	// string code = "";
-	// code += "\t\t; At line no " + to_string(line_count) + ": getting value of " + var->getName() + "[" + index->getName() + "]\n";
-	// code += "\t\tPOP BX" + "\t; Getting index of the array\n";
-	// code += "\t\tSHL BX, 1" + "\t; Multiplying index by 2 to match size of a word\n";
-	// if(var->isGlobal){
-	// 	code += "\t\tMOV AX, " + var->getName() + "[BX]" + "\t; Getting the value of the array at index BX\n";
-	// }
-	// else{
-	// 	code += "SUB BX, " + to_string(var->getOffset()) + "\t; Adding the offset of the array to get the offset of array element\n";
-	// 	code += "ADD BX, BP" + "\t; Adding BP to BX to get the address of the array\n";
-	//     code += "\t\tMOV AX, [BX]" + "\t; Getting the value of the array at address BX\n";
-	// }
-	// // Pushing the index and value of the array element on the stack
-	// // This will allow the ASSIGNOP and INCOP to use it later
-	// code += "\t\tPUSH AX" + "\t; Pushing the value of the array element at index " + index->getName() + "\n";
-	// code += "\t\tPUSH BX" + "\t; Pushing the index of the array\n";
-	// addInCodeSegment(code);
 	evaluateArrayVariable(var, index->getName());
 	return var;
 }
@@ -438,7 +376,6 @@ SymbolInfo *endFuncDef(bool endProc = false, string name = "", string retType = 
 		if(retType == VOID_TYPE){
 			endProcedure(name, retType);
 		}
-		//endProcedure(name, retType);
 	}
 	totalParams = 0;
 	currentFunc = nullptr;
@@ -517,8 +454,6 @@ SymbolInfo *getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 	{
 		opVal = getConstValue("", INT_TYPE);
 	}
-	// opVal->code = left->code + addop + right->code;
-	// opVal->code += addAddOpAsmCode(addop, opVal->getName(), left, right);
 	addAddOpAsmCode(addop, left, right);
 	return opVal;
 }
@@ -580,22 +515,14 @@ SymbolInfo *getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
 			if (left->getVarType() == FLOAT_TYPE)
 			{
 				printWarning("Assigning integer value to float");
-				// left->setVarValue(static_cast<float>(right->intValue()*1.0));
 			}
-			// else{
-			// 	left->setVarValue(right->intValue());
-			// }
 		}
 		else
 		{
 			if (left->getVarType() == INT_TYPE)
 			{
 				printWarning("Assigning float value to integer");
-				// left->setVarValue(static_cast<int>(right->fltValue()));
 			}
-			// else{
-			// 	left->setVarValue(right->fltValue());
-			// }
 		}
 		addAssignExpAsmCode(left, right);
 	}
@@ -621,7 +548,6 @@ SymbolInfo *getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
 	{
 		printError("Can't assign value to a function");
 	}
-	// addInCodeSegment(code);
 	return left;
 }
 
@@ -759,11 +685,6 @@ void createScope()
 
 void exitScope()
 {
-	// if (currentFunc != nullptr && isReturnedFromFunction == false && currentFunc->getFuncRetType() != VOID_TYPE)
-	// {
-	// 	printWarning(currentFunc->getName() + " function with return type " + currentFunc->getFuncRetType() + " has no return statement");
-	// }
-	// currentFunc = nullptr;
 	symbolTable->printAllScope(logout);
 	fprintf(logout, "\n\n");
 	scope = symbolTable->exitScope();
