@@ -801,18 +801,22 @@ int main(int argc,char *argv[])
         fprintf(errorout,"\nTotal Syntax/Semantic Errors: %d\n",syntax_error_count);
         fprintf(errorout,"\nTotal Lexical Errors: %d\n",error_count);
         fprintf(errorout,"\nTotal Warning: %d\n",warning_count);
+
+        optimizedFile.open("optimized_code.asm");
         
         if((error_count+syntax_error_count)>0){
                 asmFile.close();
                 asmFile.open("code.asm");
-                // optimizedFile.close();
-                // optimizedFile.open("code.asm");
+                optimizedFile.close();
+                optimizedFile.open("code.asm");
         }
         else{
                 writePrintNumProc();
                 endAssemblyCode();
         }
-        // optimizeCodeSegment();
+
+        optimizeCodeSegment();
+        optimizedFile.close();
 
         fclose(yyin);
 	fclose(logout);

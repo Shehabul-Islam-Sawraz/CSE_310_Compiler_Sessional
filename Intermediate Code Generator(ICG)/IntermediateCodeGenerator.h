@@ -7,6 +7,7 @@
 
 string codesegment, datasegment;
 ofstream asmFile, optimizedFile;
+ifstream asmForOptimizeFile;
 FILE *logout, *errorout, *parserout;
 
 extern int line_count;
@@ -140,7 +141,7 @@ string formatCode(string code){
 	return formattedCode;
 }
 
-/*bool isNumber(string str)
+bool isNumber(string str)
 {
     for (char c : str) {
         if (isdigit(c) == 0){
@@ -159,14 +160,23 @@ int strToInt(string str)
     return num;
 }
 
-string& ltrim(string &s)
+string ltrim(string &s)
 {
-    auto it = find_if(s.begin(), s.end(),
-                    [](char c) {
-                        return !std::isspace<char>(c, std::locale::classic());
-                    });
-    s.erase(s.begin(), it);
-    return s;
+    string str = "";
+    for(int i=0;i<s.size();i++){
+        if(s[i]!='\t'){
+            str+=s[i];
+        }
+        else{
+            if(i!=s.size()-1){
+                if(s[i+1]==';'){
+                    str+=s[i];
+                }
+            }
+        }
+    }
+    //cout << s << endl;
+    return str;
 }
 
 vector<string> split(string s){
@@ -201,15 +211,21 @@ void optimizeCodeSegment()
 {
     string line, nextLine;
 	vector<string> portions, nextPortions;
-    asmFile.open("code.asm");
+    asmForOptimizeFile.open("code.asm");
     vector<string> lineVector;
-    while (getline(asmFile,line)){
+    while (getline(asmForOptimizeFile,line)){
+        //string str = ltrim(line);
+        line.erase(std::remove(line.begin(), line.end(), '\t'), line.end());
+        if(line[0] == ';'){
+            continue;
+        }
         lineVector.push_back(line);
     }
 		
     for (int i = 0; i < lineVector.size()-1; i++)
     {
         if((split(lineVector[i]).size()==0)){
+            //cout << lineVector[i] << endl;
             continue;
         }
         
@@ -263,9 +279,11 @@ void optimizeCodeSegment()
         }
     }
     for (int i = 0; i < lineVector.size(); i++){
-        optimizeCodeSegment <<lineVector[i] << endl;
+        optimizedFile << "\t\t" + lineVector[i] << endl;
     }
-}*/
+    optimizedFile << "END MAIN" + NEWLINE;
+    asmForOptimizeFile.close();
+}
 
 void replaceByNewLine(string &str)
 {
@@ -493,6 +511,7 @@ void addAssignExpAsmCode(SymbolInfo *left, SymbolInfo *right)
 
 void addAddOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
 {
+    string opr = op;
     if (op == "+")
     {
         op = "ADD";
@@ -507,7 +526,7 @@ void addAddOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
     code += "\t\tPOP BX" + string("\t; ") + right->getName() + " popped from stack\n";
     code += "\t\tPOP AX" + string("\t; ") + left->getName() + " popped from stack\n";
     code += "\t\t" + op + " AX, BX\n";
-    code += "\t\tPUSH AX" + string("\t; Pushed evaluated value of ") + left->getName() + op + right->getName() + " in the stack\n";
+    code += "\t\tPUSH AX" + string("\t; Pushed evaluated value of ") + left->getName() + opr + right->getName() + " in the stack\n";
     addInCodeSegment(code);
 }
 
