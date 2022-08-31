@@ -153,15 +153,16 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN {insertFunc($2,
 
 func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef($1, $2); startProcedure($2->getName());} compound_statement
                                 {
-                                        $$ = endFuncDef(true, $2->getName(), $1->getName());
+                                        endFuncDef(true, $2->getName(), $1->getName());
+                                        $$ = new SymbolInfo($1->getName() + " " + $2->getName() + "(" + $4->getName() + ")" + $7->getName(), "func_definition");
                                         writeENDPForFunc($2->getName());
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
                                         printRuleAndCode(func_definition,"type_specifier ID LPAREN parameter_list RPAREN compound_statement");
                                 }
                 |       type_specifier ID LPAREN RPAREN {addFunctionDef($1, $2); startProcedure($2->getName());} compound_statement
                                 {
-                                        //$$ = new SymbolInfo($1->getName() + " " + $2->getName() + "()" + $6->getName(), "func_definition");
-                                        $$ = endFuncDef(true, $2->getName(), $1->getName());
+                                        endFuncDef(true, $2->getName(), $1->getName());
+                                        $$ = new SymbolInfo($1->getName() + " " + $2->getName() + "()" + $6->getName(), "func_definition");
                                         writeENDPForFunc($2->getName());
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
                                         printRuleAndCode(func_definition,"type_specifier ID LPAREN RPAREN compound_statement");
@@ -172,8 +173,8 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef(
                                                 To handle cases like :
                                                 void foo(int x-y){}
                                         **/
-                                        //$$ = new SymbolInfo($1->getName() + " " + $2->getName() + "(" + $4->getName() + ")" + $8->getName(), "func_definition");
-                                        $$ = endFuncDef();
+                                        endFuncDef();
+                                        $$ = new SymbolInfo($1->getName() + " " + $2->getName() + "(" + $4->getName() + ")" + $8->getName(), "func_definition");
                                         writeENDPForFunc($2->getName());
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
                                 }
@@ -183,8 +184,8 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef(
                                                 To handle cases like :
                                                 void foo(-){}
                                         **/
-                                        //$$ = new SymbolInfo($1->getName() + " " + $2->getName() + "()" + $7->getName(), "func_definition");
-                                        $$ = endFuncDef();
+                                        endFuncDef();
+                                        $$ = new SymbolInfo($1->getName() + " " + $2->getName() + "()" + $7->getName(), "func_definition");
                                         writeENDPForFunc($2->getName());
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
                                 }
@@ -577,7 +578,8 @@ expression: logic_expression
                                 }
                 |       variable ASSIGNOP logic_expression
                                 {
-                                        $$ = getAssignExpVal($1, $3);
+                                        getAssignExpVal($1, $3);
+                                        $$ = new SymbolInfo($1->getName() + "=" + $3->getName(), $1->getType());
                                         setValue(expression,popValue(variable)+"="+popValue(logic_expression));
                                         printRuleAndCode(expression,"variable ASSIGNOP logic_expression");
                                 }
@@ -675,16 +677,14 @@ factor: variable
                                 }
                 |       ID LPAREN argument_list RPAREN
                                 {
-                                        SymbolInfo* s = getFuncCallValue($1);
-                                        if(s!=nullptr){
-                                                $$ = s;
-                                        }
+                                        $$ = getFuncCallValue($1);
+                                        $$->setName($1->getName() + "(" + $3->getName() + ")");
                                         setValue(factor,$1->getName()+"("+popValue(argument_list)+")");
                                         printRuleAndCode(factor,"ID LPAREN argument_list RPAREN");
                                 }
                 |       LPAREN expression RPAREN
                                 {
-                                        $$ = $2;
+                                        $$ = new SymbolInfo("(" + $2->getName() + ")", $2->getType());
                                         setValue(factor,"("+popValue(expression)+")");
                                         printRuleAndCode(factor,"LPAREN expression RPAREN");
                                 }
@@ -703,24 +703,28 @@ factor: variable
                 |       variable INCOP %prec POSTFIX_INCOP
                                 {
                                         $$ = getINDECOpVal($1,"++","post");
+                                        $$->setName($1->getName() + "++");
                                         setValue(factor,popValue(variable)+"++");
                                         printRuleAndCode(factor,"variable INCOP");
                                 }
                 |       variable DECOP %prec POSTFIX_DECOP
                                 {
                                         $$ = getINDECOpVal($1,"--","post");
+                                        $$->setName($1->getName() + "--");
                                         setValue(factor,popValue(variable)+"--");
                                         printRuleAndCode(factor,"variable DECOP");
                                 }
                 |       INCOP variable %prec PREFIX_INCOP
                                 {
                                         $$ = getINDECOpVal($2,"++","pre");
+                                        $$->setName("++" + $2->getName());
                                         setValue(factor,"++"+popValue(variable));
                                         printRuleAndCode(factor,"variable INCOP");
                                 }
                 |       DECOP variable %prec PREFIX_DECOP
                                 {
                                         $$ = getINDECOpVal($2,"--","pre");
+                                        $$->setName("--" + $2->getName());
                                         setValue(factor,"--"+popValue(variable));
                                         printRuleAndCode(factor,"variable DECOP");
                                 }

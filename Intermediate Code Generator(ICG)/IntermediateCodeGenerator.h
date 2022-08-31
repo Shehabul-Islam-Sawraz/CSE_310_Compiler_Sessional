@@ -542,12 +542,12 @@ string getRelOpASM(string op)
 
 void addRelOpAsmCode(string op, SymbolInfo *left, SymbolInfo *right)
 {
-    op = getRelOpASM(op);
     string labelIfTrue = newLabel();
     string labelIfFalse = newLabel();
 
     string code = "";
     code += "\t\t; At line no  " + to_string(line_count) + ": Checking if " + left->getName() + op + right->getName() + "\n";
+    op = getRelOpASM(op);
     code += "\t\tPOP BX" + string("\t; Popped out ") + right->getName() + " from stack\n";
     code += "\t\tPOP AX" + string("\t; Popped out ") + left->getName() + " from stack\n";
     code += "\t\tCMP AX, BX" + string("\t; Comparing ") + left->getName() + " with " + right->getName() + "\n";
@@ -694,7 +694,7 @@ void addIncDecAsmCode(SymbolInfo *sym, string op, string type)
 {
     string code = "";
     if(type == "post"){
-        code += "\t\t; At line no " + to_string(line_count) + ": Evaluating postfix " + op + " of " + sym->getName() + NEWLINE;
+        code += "\t\t; At line no " + to_string(line_count) + ": Evaluating " + sym->getName() + op + NEWLINE;
         if(sym->getDecType() == ARRAY){
             code += "\t\tPOP BX" + string("\t; Array index popped from stack") + NEWLINE;
             code += "\t\tPUSH BP" + string("\t; Saving value of BP in stack") + NEWLINE;
@@ -739,7 +739,7 @@ void addIncDecAsmCode(SymbolInfo *sym, string op, string type)
         }
     }
     else{
-        code += "\t\t; At line no " + to_string(line_count) + ": Evaluating prefix " + op + " of " + sym->getName() + NEWLINE;
+        code += "\t\t; At line no " + to_string(line_count) + ": Evaluating " + sym->getName() + op + NEWLINE;
         if(sym->getDecType() == ARRAY){
             code += "\t\tPOP BX" + string("\t; Array index popped from stack") + NEWLINE;
         }

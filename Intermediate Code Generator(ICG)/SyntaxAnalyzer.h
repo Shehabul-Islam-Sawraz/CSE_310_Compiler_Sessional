@@ -366,9 +366,9 @@ SymbolInfo *getArrVar(SymbolInfo *sym, SymbolInfo *index)
 	return var;
 }
 
-SymbolInfo *endFuncDef(bool endProc = false, string name = "", string retType = "")
+void endFuncDef(bool endProc = false, string name = "", string retType = "")
 {
-	SymbolInfo *temp = new SymbolInfo("", TEMPORARY_TYPE);
+	//SymbolInfo *temp = new SymbolInfo("", TEMPORARY_TYPE);
 	offset = offsets.back();
 	offsets.pop_back();
 	if (endProc)
@@ -379,7 +379,7 @@ SymbolInfo *endFuncDef(bool endProc = false, string name = "", string retType = 
 	}
 	totalParams = 0;
 	currentFunc = nullptr;
-	return temp;
+	//return temp;
 }
 
 SymbolInfo *getConstValue(SymbolInfo *sym, string varType)
@@ -418,8 +418,8 @@ SymbolInfo *getUnaryOpVal(SymbolInfo *op, SymbolInfo *sym)
 		return nullValue();
 	}
 	string uniop = op->getName();
-	SymbolInfo *opVal = new SymbolInfo("", "");
-	opVal = getConstValue("", sym->getVarType());
+	SymbolInfo *opVal = new SymbolInfo(op->getName() + sym->getName(), TEMPORARY_TYPE);
+	opVal = getConstValue(opVal->getName(), sym->getVarType());
 	addUnaryOpAsmCode(sym,uniop);
 	return opVal;
 }
@@ -431,8 +431,8 @@ SymbolInfo *getNotOpVal(SymbolInfo *sym)
 		printError("Invalid Operand for Logical Not Operation");
 		return nullValue();
 	}
-	SymbolInfo *opVal = new SymbolInfo("", "");
-	opVal = getConstValue("", INT_TYPE);
+	SymbolInfo *opVal = new SymbolInfo("!" + sym->getName(), TEMPORARY_TYPE);
+	opVal = getConstValue(opVal->getName(), INT_TYPE);
 	addNotOpAsmCode(sym);
 	return opVal;
 }
@@ -448,11 +448,11 @@ SymbolInfo *getAddOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 	SymbolInfo *opVal = new SymbolInfo(left->getName() + op->getName() + right->getName(), TEMPORARY_TYPE);
 	if (left->getVarType() == FLOAT_TYPE || right->getVarType() == FLOAT_TYPE)
 	{
-		opVal = getConstValue("", FLOAT_TYPE);
+		opVal = getConstValue(opVal->getName(), FLOAT_TYPE);
 	}
 	else
 	{
-		opVal = getConstValue("", INT_TYPE);
+		opVal = getConstValue(opVal->getName(), INT_TYPE);
 	}
 	addAddOpAsmCode(addop, left, right);
 	return opVal;
@@ -475,14 +475,14 @@ SymbolInfo *getMulOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 	{
 		printWarning("Type mismatch");
 	}
-	SymbolInfo *opVal = new SymbolInfo("", "");
+	SymbolInfo *opVal = new SymbolInfo(left->getName() + op->getName() + right->getName(), TEMPORARY_TYPE);
 	if (left->getVarType() == FLOAT_TYPE || right->getVarType() == FLOAT_TYPE)
 	{
-		opVal = getConstValue("", FLOAT_TYPE);
+		opVal = getConstValue(opVal->getName(), FLOAT_TYPE);
 	}
 	else
 	{
-		opVal = getConstValue("", INT_TYPE);
+		opVal = getConstValue(opVal->getName(), INT_TYPE);
 	}
 	if (mulop == "%")
 	{
@@ -500,13 +500,13 @@ SymbolInfo *getMulOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 	return opVal;
 }
 
-SymbolInfo *getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
+void getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
 {
 	// Handles assignment expressions e.g. x=2
 	if (left->getVarType() == VOID_TYPE || right->getVarType() == VOID_TYPE)
 	{
 		printError("Assign Operation on void type");
-		return nullValue();
+		//return nullValue();
 	}
 	if (left->isVariable())
 	{
@@ -548,7 +548,7 @@ SymbolInfo *getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
 	{
 		printError("Can't assign value to a function");
 	}
-	return left;
+	//return left;
 }
 
 SymbolInfo *getRelOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
@@ -559,7 +559,7 @@ SymbolInfo *getRelOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 		return nullValue();
 	}
 	string relop = op->getName();
-	SymbolInfo *opVal = new SymbolInfo("", "");
+	SymbolInfo *opVal = new SymbolInfo(left->getName() + op->getName() + right->getName(), TEMPORARY_TYPE);
 	opVal->setVarType(INT_TYPE);
 	addRelOpAsmCode(op->getName(), left, right);
 	if (relop == "==" && left->getVarType() != right->getVarType())
@@ -577,7 +577,7 @@ SymbolInfo *getLogicOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
 		return nullValue();
 	}
 	string logicOp = op->getName();
-	SymbolInfo *opVal = new SymbolInfo("", "");
+	SymbolInfo *opVal = new SymbolInfo(left->getName() + op->getName() + right->getName(), TEMPORARY_TYPE);
 	opVal->setVarType(INT_TYPE);
 	addLogicOpAsmCode(op->getName(), left, right);
 	if (left->getVarType() != right->getVarType())
