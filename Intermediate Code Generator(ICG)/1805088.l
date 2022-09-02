@@ -175,7 +175,7 @@ SEMICOLON [;]
 "break" 	{return BREAK;}
 "return"	{return RETURN;}
 "continue" 	{return CONTINUE;}
-"printf"    {return PRINTLN;}
+"println"    {return PRINTLN;}
 
 {ADDOP} {addOperators(ADDOP_TOKEN); return ADDOP;}
 {MULOP} {addOperators(MULOP_TOKEN); return MULOP;}

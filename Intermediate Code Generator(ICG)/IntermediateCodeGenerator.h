@@ -1,13 +1,11 @@
 #include "SymbolTable.h"
+#include "Optimizer.h"
 #include <bits/stdc++.h>
 
 #define DEFINE_WORD " DW "
 #define ARRAY_DUP " DUP(0)"
-#define NEWLINE string("\r\n")
 
 string codesegment, datasegment;
-ofstream asmFile, optimizedFile;
-ifstream asmForOptimizeFile;
 FILE *logout, *errorout, *parserout;
 
 extern int line_count;
@@ -141,150 +139,6 @@ string formatCode(string code){
 	return formattedCode;
 }
 
-bool isNumber(string str)
-{
-    for (char c : str) {
-        if (isdigit(c) == 0){
-            return false;
-        }
-    }
-    return true;
-}
-
-int strToInt(string str)
-{
-    stringstream ss; 
-    int num;
-    ss << str;
-    ss >> num;
-    return num;
-}
-
-string ltrim(string &s)
-{
-    string str = "";
-    for(int i=0;i<s.size();i++){
-        if(s[i]!='\t'){
-            str+=s[i];
-        }
-        else{
-            if(i!=s.size()-1){
-                if(s[i+1]==';'){
-                    str+=s[i];
-                }
-            }
-        }
-    }
-    //cout << s << endl;
-    return str;
-}
-
-vector<string> split(string s){
-    vector<string> tokens;
-    string token = "";
-    string str = "";
-    for(int i=0;i<s.length();i++){
-        if(s[i]!='\t'){
-            str += s[i];
-        }
-    }
-    for (int i = 0; i < str.length(); i++) {
-        if (str[i] == ' ' || str[i] == ',' || str[i] == '\t') {
-            if (token != "") {
-                tokens.push_back(token);
-                token = "";
-            }
-        }
-        else {
-            token += str[i];
-        }
-    }
-
-    if (token != "") {
-        tokens.push_back(token);
-    }
-
-    return tokens;
-}
-
-void optimizeCodeSegment()
-{
-    string line, nextLine;
-	vector<string> portions, nextPortions;
-    asmForOptimizeFile.open("code.asm");
-    vector<string> lineVector;
-    while (getline(asmForOptimizeFile,line)){
-        //string str = ltrim(line);
-        line.erase(std::remove(line.begin(), line.end(), '\t'), line.end());
-        if(line[0] == ';'){
-            continue;
-        }
-        lineVector.push_back(line);
-    }
-		
-    for (int i = 0; i < lineVector.size()-1; i++)
-    {
-        if((split(lineVector[i]).size()==0)){
-            //cout << lineVector[i] << endl;
-            continue;
-        }
-        
-        line=lineVector[i];
-        nextLine=lineVector[i+1];
-        portions=split(line);
-        nextPortions=split(nextLine);
-        if(portions[0]=="PUSH"){
-            if(nextPortions[0]=="POP"){ 
-                if(portions[1]==nextPortions[1]){ // PUSH AX ; POP AX
-                    lineVector[i]=";----Optimized Code----" + NEWLINE + ";" + lineVector[i];
-                    lineVector[i+1]=";"+lineVector[i+1];
-                }
-            }
-        }
-        if(portions[0]=="MOV"){
-            if(portions[1]==portions[2]){ // MOV AX, AX
-                lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
-            }
-            if(nextPortions[0]=="MOV"){ 
-                if((portions[1]==nextPortions[2]) && (portions[2]==nextPortions[1])){ // MOV AX, BX ; MOV BX, AX
-                    lineVector[i+1]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i+1];
-                }
-                if(portions[1]==nextPortions[1]){ // MOV AX, BX ; MOV AX, CX
-                    lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
-                }
-            }
-        }
-        if(portions[0] == "ADD" || portions[0] == "SUB"){
-            if(isNumber(portions[2])){
-                if(strToInt(portions[2]) == 0){
-                    lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
-                }
-            }
-        }
-        if(portions[0] == "IMUL" || portions[0] == "IDIV"){
-            if(isNumber(portions[2])){
-                if(strToInt(portions[2]) == 1){
-                    lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
-                }
-            }
-        }
-        if((portions[0] == "ADD" && nextPortions[0] == "ADD") || (portions[0] == "SUB" && nextPortions[0] == "SUB")){
-            if(isNumber(portions[2]) && isNumber(nextPortions[2])){
-                if(portions[1]==nextPortions[1]){
-                    lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
-                    int x = strToInt(portions[2]) + strToInt(nextPortions[2]);
-                    lineVector[i+1]=portions[0] + " " + portions[1] + ", " + to_string(x);
-                }
-            }
-        }
-    }
-    for (int i = 0; i < lineVector.size(); i++){
-        optimizedFile << "\t\t" + lineVector[i] << endl;
-    }
-    optimizedFile << "END MAIN" + NEWLINE;
-    asmForOptimizeFile.close();
-}
-
 void replaceByNewLine(string &str)
 {
     replaceAll(str, "\r", "");
@@ -334,7 +188,6 @@ string GET_ASM_VAR_NAME(string var)
 
 void addGlobalVarInDataSegment(string var, int arrsize = 0, bool isArray = false)
 {
-    // string code = GET_ASM_VAR_NAME(var) + DEFINE_WORD + "?";
     string code = "";
     if (!isArray)
     {
@@ -359,7 +212,6 @@ void addInCodeSegment(string code)
         if(!isForLoop){
             string str = code;
             replaceByNewLine(str);
-            // codesegment+=str;
             setValue(code_segment, popValue(code_segment) + str);
             writeInCodeSegment(str);
         }
@@ -385,20 +237,20 @@ void init_model()
                                   "MOV DS, AX" + NEWLINE);
 }
 
-string newTemp()
-{
-    string temp = "t";
-    char c[3];
-    sprintf(c, "%d", tempCount);
-    temp += c;
-    if (tempCount > maxTempCount)
-    {
-        maxTempCount++;
-        addGlobalVarInDataSegment(temp);
-    }
-    tempCount++;
-    return temp;
-}
+// string newTemp()
+// {
+//     string temp = "t";
+//     char c[3];
+//     sprintf(c, "%d", tempCount);
+//     temp += c;
+//     if (tempCount > maxTempCount)
+//     {
+//         maxTempCount++;
+//         addGlobalVarInDataSegment(temp);
+//     }
+//     tempCount++;
+//     return temp;
+// }
 
 string newLabel()
 {
@@ -408,39 +260,6 @@ string newLabel()
     labelCount++;
     lb += b;
     return lb;
-}
-
-string setSIForArray(string reg, string offset)
-{
-    string code = "";
-    code += "MOV " + reg + ", " + GET_ASM_VAR_NAME(offset) + NEWLINE;
-    code += "ADD " + reg + ", " + reg + NEWLINE;
-    return code;
-}
-
-string arrayMemoryToReg(string command, string reg, string arrayName, string offset)
-{
-    string code = "";
-    code += setSIForArray("SI", offset);
-    code += command + " " + reg + ", " + GET_ASM_VAR_NAME(arrayName) + "[SI]" + NEWLINE;
-    return code;
-}
-
-string memoryToReg(string command, string reg, string memory)
-{
-    return command + " " + reg + ", " + GET_ASM_VAR_NAME(memory) + NEWLINE;
-}
-
-string operatorToReg(string command, string reg, SymbolInfo *sym)
-{
-    if (sym->isArray())
-    {
-        return arrayMemoryToReg(command, reg, sym->getName(), sym->getArrIndex());
-    }
-    else
-    {
-        return memoryToReg(command, reg, sym->getName());
-    }
 }
 
 string declareLabel(string label, bool conditionValue)
@@ -801,15 +620,6 @@ void addIncDecAsmCode(SymbolInfo *sym, string op, string type)
     addInCodeSegment(code);
 }
 
-string getExpressionCode(SymbolInfo *sym)
-{
-    string code = "";
-    code += sym->code;
-    code += operatorToReg("MOV", "DX", sym);
-    code += jumpInstant(currentFunc->getFuncRetLabel());
-    return code;
-}
-
 void initMainProc()
 {
     if ((syntax_error_count + error_count) > 0)
@@ -851,7 +661,6 @@ void endProcedure(string name, string retType)
     }
 
     string code = "";
-    //code += "\t\t" + getLabelForFunction(name) + ":\n";
     code += NEWLINE + NEWLINE;
     code += "\t\tMOV SP, BP\t; Restoring SP at the end of function\n";
     code += "\t\tPOP BP\t; Restoring BP at the end of function\n";
@@ -929,7 +738,6 @@ void handleExtraExpressionPush(string name)
 
 void forLoopStart()
 {
-    // forLoop.push("");
     string startLabel = newLabel();
     forLoopStartLabel.push(startLabel);
     string code = "";

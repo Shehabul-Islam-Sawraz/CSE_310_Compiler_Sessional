@@ -17,7 +17,8 @@
         "ostream": "c",
         "vector": "c",
         "iosfwd": "c",
-        "xmemory": "cpp"
+        "xmemory": "cpp",
+        "iterator": "c"
     },
     "liveServer.settings.port": 5501
 }

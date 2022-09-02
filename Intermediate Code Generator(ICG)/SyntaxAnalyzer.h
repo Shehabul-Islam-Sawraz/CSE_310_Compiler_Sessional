@@ -83,7 +83,8 @@ void yyerror(const char *s)
 SymbolInfo *insertVar(SymbolInfo *var, bool isArray = false)
 {
 	if (variableType == VOID_TYPE)
-	{ // Semantic error
+	{ 
+		// Semantic error
 		printError("Variable type cannot be void");
 	}
 	else
@@ -119,7 +120,6 @@ SymbolInfo *insertVar(SymbolInfo *var, bool isArray = false)
 						return nullValue();
 					}
 					temp->isGlobal = true;
-					// temp->setOffset(-1);
 					addGlobalVarInDataSegment(temp->getName());
 				}
 			}
@@ -159,7 +159,6 @@ void insertArr(SymbolInfo *sym, SymbolInfo *index)
 	int arrsize = arr->getArrSize();
 	if (arr->getScopeID() != "1" && (error_count + syntax_error_count) == 0)
 	{
-		// writeInCodeSegment("\t\tPUSH BX    ;line no " + to_string(lineCount) + ": " + idName + " declared");
 		string code = "\t\t; In line no " + to_string(line_count) + ": Array named " + arr->getName() + " with size " + to_string(arrsize) + " declared";
 		for (int i = 0; i < arrsize; i++)
 		{
@@ -181,7 +180,6 @@ void insertArr(SymbolInfo *sym, SymbolInfo *index)
 			return;
 		}
 		arr->isGlobal = true;
-		// arr->setOffset(-1);
 		addGlobalVarInDataSegment(arr->getName(), arrsize, true);
 	}
 }
@@ -349,8 +347,7 @@ SymbolInfo *getArrVar(SymbolInfo *sym, SymbolInfo *index)
 		}
 		else
 		{
-			// temp->setArrIndex(static_cast<size_t>(index->intValue())); // Setting the index to the index value that we are trying to access
-			temp->setArrIndex(index->getName());
+			temp->setArrIndex(index->getName()); // Setting the index to the index value that we are trying to access
 		}
 	}
 	// A variable used inside a function must be used as a temporary variable
@@ -368,7 +365,6 @@ SymbolInfo *getArrVar(SymbolInfo *sym, SymbolInfo *index)
 
 void endFuncDef(bool endProc = false, string name = "", string retType = "")
 {
-	//SymbolInfo *temp = new SymbolInfo("", TEMPORARY_TYPE);
 	offset = offsets.back();
 	offsets.pop_back();
 	if (endProc)
@@ -379,7 +375,6 @@ void endFuncDef(bool endProc = false, string name = "", string retType = "")
 	}
 	totalParams = 0;
 	currentFunc = nullptr;
-	//return temp;
 }
 
 SymbolInfo *getConstValue(SymbolInfo *sym, string varType)
@@ -506,7 +501,6 @@ void getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
 	if (left->getVarType() == VOID_TYPE || right->getVarType() == VOID_TYPE)
 	{
 		printError("Assign Operation on void type");
-		//return nullValue();
 	}
 	if (left->isVariable())
 	{
@@ -548,7 +542,6 @@ void getAssignExpVal(SymbolInfo *left, SymbolInfo *right)
 	{
 		printError("Can't assign value to a function");
 	}
-	//return left;
 }
 
 SymbolInfo *getRelOpVal(SymbolInfo *left, SymbolInfo *op, SymbolInfo *right)
