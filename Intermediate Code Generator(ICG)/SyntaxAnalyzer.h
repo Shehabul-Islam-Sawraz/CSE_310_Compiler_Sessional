@@ -363,8 +363,15 @@ SymbolInfo *getArrVar(SymbolInfo *sym, SymbolInfo *index)
 	return var;
 }
 
+void showFuncRetWarning() {
+	if(currentFunc!=nullptr && isReturnedFromFunction==false && currentFunc->getFuncRetType()!=VOID_TYPE){
+		printError(currentFunc->getName() + " function with return type " + currentFunc->getFuncRetType() + " has no return statement");
+	}
+}
+
 void endFuncDef(bool endProc = false, string name = "", string retType = "")
 {
+	showFuncRetWarning();
 	offset = offsets.back();
 	offsets.pop_back();
 	if (endProc)
@@ -375,6 +382,7 @@ void endFuncDef(bool endProc = false, string name = "", string retType = "")
 	}
 	totalParams = 0;
 	currentFunc = nullptr;
+	isReturnedFromFunction = false;
 }
 
 SymbolInfo *getConstValue(SymbolInfo *sym, string varType)
@@ -681,5 +689,4 @@ void exitScope()
 	symbolTable->printAllScope(logout);
 	fprintf(logout, "\n\n");
 	scope = symbolTable->exitScope();
-	isReturnedFromFunction = false;
 }

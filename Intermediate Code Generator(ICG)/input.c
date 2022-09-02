@@ -38,7 +38,7 @@ int main()
     a = 1;
     b = 2;
     a = g(a, b);
-    printf(a);
+    println(a);
     for (i = 0; i < 4; i++)
     {
         a = 3;
@@ -48,8 +48,8 @@ int main()
             a--;
         }
     }
-    printf(a);
-    printf(b);
-    printf(i);
+    println(a);
+    println(b);
+    println(i);
     return 0;
 }

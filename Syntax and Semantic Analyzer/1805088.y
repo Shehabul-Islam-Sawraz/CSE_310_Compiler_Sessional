@@ -140,11 +140,13 @@ func_declaration: type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 
 func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef($1, $2);} compound_statement
                                 {
+                                        endFuncDef();
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
                                         printRuleAndCode(func_definition,"type_specifier ID LPAREN parameter_list RPAREN compound_statement");
                                 }
                 |       type_specifier ID LPAREN RPAREN {addFunctionDef($1, $2);} compound_statement
                                 {
+                                        endFuncDef();
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
                                         printRuleAndCode(func_definition,"type_specifier ID LPAREN RPAREN compound_statement");
                                 }
@@ -154,6 +156,7 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef(
                                                 To handle cases like :
                                                 void foo(int x-y){}
                                         **/
+                                        endFuncDef();
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+popValue(parameter_list)+")"+popValue(compound_statement));
                                 }
                 |       type_specifier ID LPAREN error RPAREN {addFunctionDef($1, $2);} compound_statement
@@ -162,6 +165,7 @@ func_definition: type_specifier ID LPAREN parameter_list RPAREN {addFunctionDef(
                                                 To handle cases like :
                                                 void foo(-){}
                                         **/
+                                        endFuncDef();
                                         setValue(func_definition,popValue(type_specifier)+" "+$2->getName()+"("+")"+popValue(compound_statement));
                                 }
                 ;

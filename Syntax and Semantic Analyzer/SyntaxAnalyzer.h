@@ -839,6 +839,12 @@ void checkFuncReturnType() {
 	}
 }
 
+void showFuncRetWarning() {
+	if(currentFunc!=nullptr && isReturnedFromFunction==false && currentFunc->getFuncRetType()!=VOID_TYPE){
+		printError(currentFunc->getName() + " function with return type " + currentFunc->getFuncRetType() + " has no return statement");
+	}
+}
+
 void createScope(){
 	scope = symbolTable->createScopeTable(NoOfBuckets);
 	for(auto param: parameters){
@@ -847,13 +853,14 @@ void createScope(){
 	clearFunctionParam();
 }
 
-void exitScope(){
-	if(currentFunc!=nullptr && isReturnedFromFunction==false && currentFunc->getFuncRetType()!=VOID_TYPE){
-		printWarning(currentFunc->getName() + " function with return type " + currentFunc->getFuncRetType() + " has no return statement");
-	}
+void endFuncDef(){
+	showFuncRetWarning();
 	currentFunc = nullptr;
+	isReturnedFromFunction = false;
+}
+
+void exitScope(){
 	symbolTable->printAllScope(logout);
 	fprintf(logout,"\n\n");
 	scope = symbolTable->exitScope();
-	isReturnedFromFunction = false;
 }
