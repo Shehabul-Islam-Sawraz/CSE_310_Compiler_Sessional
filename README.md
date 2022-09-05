@@ -39,14 +39,14 @@ This is a C compiler that performs some lexical, syntax and semantic error check
 
 For lexical analyzer we will use Flex (Fast Lexical Analyzer Generator), which is basicallly a computer program that generates lexical analyzers(scanners or lexers).
 
-### Usage
+`Note:` For more details about Flex, see [here](/Lexical%20Analyzer/Lexical%20Analysis%20Preview.pdf).
+
+### Installation
 
 ***Installing Flex on linux:*** 
 
     sudo apt-get update
     sudo apt-get install flex
-
-For more details about Flex, see [here](/Lexical%20Analyzer/Lexical%20Analysis%20Preview.pdf).
 
 ### Lexer returns the following tokens to the parser:
 
@@ -133,14 +133,14 @@ Detect lexical errors in the source program and reports it along with correspond
 
 For syntax & symentic analyzer we will use YACC (Yet Another Compiler Compiler), which is basicallly a program that takes as input a specification of a syntax and produces as output a procedure for recognizing that language. An updated version of YACC is Bison. Bison is basically a general-purpose parser generator that converts an annotated context-free grammar into a deterministic LR or generalized LR (GLR) parser.
 
-### Usage
+`Note:` For more details about YACC or Bison, see [here](/Syntax%20and%20Semantic%20Analyzer/Necessary%20Resources/YACC_Bison.pdf).
+
+### Installation
 
 ***Installing Bison on linux:*** 
 
     sudo apt-get update
     sudo apt-get install bison
-
-For more details about YACC or Bison, see [here](/Syntax%20and%20Semantic%20Analyzer/Necessary%20Resources/YACC_Bison.pdf).
 
 ***You can see the grammers given for our C-Compiler [here](/Syntax%20and%20Semantic%20Analyzer/BisonAssignmentGrammar.pdf)***
 
