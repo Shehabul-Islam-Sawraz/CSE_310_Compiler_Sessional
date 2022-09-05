@@ -2,9 +2,9 @@
 
 # A C Compiler
 
-#### Copyright & Credit
-
-@ Copyright of this readme goes to: <a href="https://github.com/fardinanam">Fardin Anam Aungon</a>
+*****
+*The credit for this readme goes mostly to [Fardin Anam Aungon](https://github.com/fardinanam). Thanks to him for his amazing writeup.*
+*****
 
 ## Introduction
 
@@ -12,7 +12,7 @@ This is a C compiler that performs some lexical, syntax and semantic error check
 
 ## Techs
 
-<img src="https://img.shields.io/badge/Languages-151515?style=for-the-badge&logo=plex&logoColor=FFFFFF">![badge-ya](https://img.shields.io/badge/c%2B%2B-151515?style=for-the-badge&logo=c%2B%2B&logoColor=00599C&labelColor=151515)![badge-python](https://img.shields.io/badge/LEX-151515?style=for-the-badge&logo=&logoColor=f4ff19&labelColor=151515)![badge-java](https://img.shields.io/badge/BISON-151515?style=for-the-badge&logo=&logoColor=c93618&labelColor=151515) <br/>
+<img src="https://img.shields.io/badge/Languages-151515?style=for-the-badge&logo=plex&logoColor=FFFFFF">![badge-yacc](https://img.shields.io/badge/c%2B%2B-151515?style=for-the-badge&logo=c%2B%2B&logoColor=00599C&labelColor=151515)![badge-python](https://img.shields.io/badge/LEX-151515?style=for-the-badge&logo=&logoColor=f4ff19&labelColor=151515)![badge-java](https://img.shields.io/badge/BISON-151515?style=for-the-badge&logo=&logoColor=c93618&labelColor=151515) <br/>
 
 ## Table of Contents
 
@@ -529,7 +529,7 @@ As the above algorithm can generate some redundant instructions, we have to opti
         ```
     * Now, the compare instruction is useless.
         ```asm
-                *code.asm                              *optimized_code.asm
+                *optimized_code.asm                     *final_optimized_code.asm
                 CMP AX, BX              ->              ;CMP AX, BX
                 ;JE L1                                  ;JE L1
                 L1:                                     L1:

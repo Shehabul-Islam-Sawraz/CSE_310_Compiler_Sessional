@@ -24,6 +24,16 @@ int strToInt(string str)
     return num;
 }
 
+bool isJump(string s)
+{
+    if (s == "JMP" || s == "JE" || s == "JL" || s == "JLE" || s == "JG" || s == "JGE" ||
+        s == "JNE" || s == "JNL" || s == "JNLE" || s == "JNG" || s == "JNGE")
+    {
+        return true;
+    }
+    return false;
+}
+
 vector<string> split(string s){
     vector<string> tokens;
     string token = "";
@@ -52,11 +62,16 @@ vector<string> split(string s){
     return tokens;
 }
 
-void optimizeCodeSegment()
+void optimizeCodeSegment(int pass)
 {
     string line, nextLine;
 	vector<string> portions, nextPortions;
-    asmForOptimizeFile.open("code.asm");
+   if(pass == 1){
+        asmForOptimizeFile.open("code.asm");
+    }
+    else{
+        asmForOptimizeFile.open("optimized_code.asm");
+    }
     vector<string> lineVector;
     while (getline(asmForOptimizeFile,line)){
         line.erase(std::remove(line.begin(), line.end(), '\t'), line.end());
@@ -103,7 +118,7 @@ void optimizeCodeSegment()
                 if((portions[1]==nextPortions[2]) && (portions[2]==nextPortions[1])){ // MOV AX, BX ; MOV BX, AX
                     lineVector[i+1]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i+1];
                 }
-                if(portions[1]==nextPortions[1]){ // MOV AX, BX ; MOV AX, CX
+                if(portions[1]==nextPortions[1]){ // MOV AX, BX ; MOV AX, CX or MOV AX, BX ; MOV AX, BX
                     lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
                 }
             }
@@ -135,6 +150,12 @@ void optimizeCodeSegment()
                     lineVector[i+1]=portions[0] + " " + portions[1] + ", " + to_string(x);
                 }
             }
+        }
+        if(isJump(portions[0]) && portions[1] == getLabel(nextPortions[0])){
+            lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
+        }
+        if(portions[0] == "CMP" && !isJump((nextPortions[0]))){
+            lineVector[i]=";----Optimized Code----" + NEWLINE + ";"+lineVector[i];
         }
     }
     for (int i = 0; i < lineVector.size(); i++){
